@@ -4,3 +4,7 @@ type User {
   createdAt: String!
   updatedAt: String!
 }
+
+extend type Query {
+  me: User!
+}

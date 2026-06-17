@@ -1,0 +1,58 @@
+# Dependências
+node_modules/
+
+# Build / output
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# Testes e cobertura
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# Variáveis de ambiente (manter .env.example versionado)
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Banco SQLite (Prisma — backend)
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Vite (frontend)
+.vite/
+frontend/dist/
+
+# Cache de ferramentas
+.eslintcache
+.cache/
+.parcel-cache/
+.turbo/
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDEs
+.idea/
+*.swp
+*.swo
+*~
+
+# Cursor / VS Code (config local)
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json

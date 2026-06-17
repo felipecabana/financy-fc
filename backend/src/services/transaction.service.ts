@@ -1,4 +1,5 @@
 import { prismaClient } from '../../prisma/prisma.js'
+import { assertOwnedCategory, findOwnedTransaction } from '../helpers/ownership.js'
 
 interface CreateTransactionInput {
   title: string
@@ -39,40 +40,19 @@ class TransactionService {
     this.assertType(data.type)
   }
 
-  private async findOwnedTransaction(userId: string, id: string) {
-    const transaction = await prismaClient.transaction.findUnique({ where: { id } })
-    if (!transaction) {
-      throw new Error('Transação não encontrada.')
-    }
-    if (transaction.userId !== userId) {
-      throw new Error('Sem permissão para realizar esta ação.')
-    }
-    return transaction
-  }
-
-  private async assertOwnedCategory(userId: string, categoryId: string) {
-    const category = await prismaClient.category.findUnique({ where: { id: categoryId } })
-    if (!category) {
-      throw new Error('Categoria não encontrada.')
-    }
-    if (category.userId !== userId) {
-      throw new Error('Sem permissão para realizar esta ação.')
-    }
-  }
-
   async listTransactions(userId: string) {
     return prismaClient.transaction.findMany({ where: { userId } })
   }
 
   async getTransaction(userId: string, id: string) {
-    return this.findOwnedTransaction(userId, id)
+    return findOwnedTransaction(userId, id)
   }
 
   async createTransaction(userId: string, data: CreateTransactionInput) {
     this.assertCreateFields(data)
 
     if (data.categoryId) {
-      await this.assertOwnedCategory(userId, data.categoryId)
+      await assertOwnedCategory(userId, data.categoryId)
     }
 
     return prismaClient.transaction.create({
@@ -87,7 +67,7 @@ class TransactionService {
   }
 
   async updateTransaction(userId: string, id: string, data: UpdateTransactionInput) {
-    await this.findOwnedTransaction(userId, id)
+    await findOwnedTransaction(userId, id)
 
     if (data.title !== undefined) {
       this.assertTitle(data.title)
@@ -99,7 +79,7 @@ class TransactionService {
       this.assertType(data.type)
     }
     if (data.categoryId) {
-      await this.assertOwnedCategory(userId, data.categoryId)
+      await assertOwnedCategory(userId, data.categoryId)
     }
 
     return prismaClient.transaction.update({
@@ -114,7 +94,7 @@ class TransactionService {
   }
 
   async deleteTransaction(userId: string, id: string) {
-    await this.findOwnedTransaction(userId, id)
+    await findOwnedTransaction(userId, id)
     await prismaClient.transaction.delete({ where: { id } })
     return true
   }

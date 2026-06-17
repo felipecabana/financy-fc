@@ -1,4 +1,5 @@
 import { prismaClient } from '../../prisma/prisma.js'
+import { findOwnedCategory } from '../helpers/ownership.js'
 
 interface CreateCategoryInput {
   name: string
@@ -15,23 +16,12 @@ class CategoryService {
     }
   }
 
-  private async findOwnedCategory(userId: string, id: string) {
-    const category = await prismaClient.category.findUnique({ where: { id } })
-    if (!category) {
-      throw new Error('Categoria não encontrada.')
-    }
-    if (category.userId !== userId) {
-      throw new Error('Sem permissão para realizar esta ação.')
-    }
-    return category
-  }
-
   async listCategories(userId: string) {
     return prismaClient.category.findMany({ where: { userId } })
   }
 
   async getCategory(userId: string, id: string) {
-    return this.findOwnedCategory(userId, id)
+    return findOwnedCategory(userId, id)
   }
 
   async createCategory(userId: string, data: CreateCategoryInput) {
@@ -43,7 +33,7 @@ class CategoryService {
   }
 
   async updateCategory(userId: string, id: string, data: UpdateCategoryInput) {
-    await this.findOwnedCategory(userId, id)
+    await findOwnedCategory(userId, id)
 
     if (data.name !== undefined) {
       this.assertName(data.name)
@@ -56,7 +46,7 @@ class CategoryService {
   }
 
   async deleteCategory(userId: string, id: string) {
-    await this.findOwnedCategory(userId, id)
+    await findOwnedCategory(userId, id)
     await prismaClient.category.delete({ where: { id } })
     return true
   }

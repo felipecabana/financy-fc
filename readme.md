@@ -37,7 +37,8 @@ Financy-fc/
     │   │   └── transaction.service.ts
     │   ├── helpers/
     │   │   ├── password.ts       # hash e verificação de senha
-    │   │   └── jwt.ts            # criação e validação de token
+    │   │   ├── jwt.ts            # criação e validação de token
+    │   │   └── ownership.ts      # existência e permissão por usuário
     │   └── errors/
     │       └── UnauthorizedError.ts
     ├── tests/                    # unitários, GraphQL in-process e smoke HTTP
@@ -155,6 +156,10 @@ O módulo em `graphql/modules/transactions/` delega para `transaction.service.ts
 Validações e erros em português, por exemplo: `Título é obrigatório.`, `Transação não encontrada.`, `Sem permissão para realizar esta ação.`
 
 Testes em `tests/` cobrem service, resolvers, schema GraphQL, mutations in-process e smoke HTTP de transações.
+
+### Isolamento por usuário
+
+As checagens de existência e permissão de categorias e transações ficam centralizadas em `src/helpers/ownership.ts` e são reutilizadas pelos serviços de domínio. Os resolvers validam o JWT e delegam ao service; as mensagens de erro e o comportamento de bloqueio entre usuários permanecem os mesmos.
 
 ---
 

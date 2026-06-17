@@ -1,7 +1,9 @@
-// Smoke de wiring: confirma _health, signup e login no mesmo schema do entrypoint.
+// Smoke de wiring: confirma _health, signup, login e me no mesmo schema do entrypoint.
+import type { Request } from 'express'
 import { ApolloServer } from '@apollo/server'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
+import { buildContext, type GraphqlContext } from '../src/config/index.js'
 import { resolvers, typeDefs } from '../src/graphql/index.js'
 import {
   createEmailCleanup,
@@ -14,8 +16,25 @@ import {
   type AuthPayload,
 } from './helpers/auth-test-utils.js'
 
+const ME_QUERY = `
+  query Me {
+    me {
+      id
+      email
+      createdAt
+      updatedAt
+    }
+  }
+`
+
+function mockRequest(authorization?: string): Request {
+  return {
+    headers: authorization === undefined ? {} : { authorization },
+  } as Request
+}
+
 describe('graphql entrypoint', () => {
-  let server: ApolloServer
+  let server: ApolloServer<GraphqlContext>
   const cleanup = createEmailCleanup()
 
   beforeAll(async () => {
@@ -59,5 +78,45 @@ describe('graphql entrypoint', () => {
 
     expect(login.errors).toBeUndefined()
     expectValidAuthPayload(login.data?.login as AuthPayload, email)
+  })
+
+  it('expõe me como query protegida no schema composto', async () => {
+    const email = uniqueEmail('entrypoint-me')
+    cleanup.track(email)
+
+    const signup = getApolloSingleResult(
+      await server.executeOperation({
+        query: SIGNUP_MUTATION,
+        variables: { data: { email, password: TEST_PASSWORD } },
+      }),
+    )
+
+    expect(signup.errors).toBeUndefined()
+    const auth = signup.data?.signup as AuthPayload
+
+    const authenticated = getApolloSingleResult(
+      await server.executeOperation(
+        { query: ME_QUERY },
+        { contextValue: await buildContext({ req: mockRequest(`Bearer ${auth.token}`) }) },
+      ),
+    )
+
+    expect(authenticated.errors).toBeUndefined()
+    expect(authenticated.data?.me).toEqual({
+      id: auth.user.id,
+      email,
+      createdAt: expect.any(String),
+      updatedAt: expect.any(String),
+    })
+
+    const unauthenticated = getApolloSingleResult(
+      await server.executeOperation(
+        { query: ME_QUERY },
+        { contextValue: await buildContext({ req: mockRequest() }) },
+      ),
+    )
+
+    expect(unauthenticated.data?.me).toBeUndefined()
+    expect(unauthenticated.errors?.[0]?.message).toBe('Usuário não autenticado.')
   })
 })

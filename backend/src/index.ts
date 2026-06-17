@@ -3,7 +3,7 @@ import express from 'express'
 import { ApolloServer } from '@apollo/server'
 import { expressMiddleware } from '@as-integrations/express4'
 
-import { env } from './config/env/index.js'
+import { buildContext, env } from './config/index.js'
 import { resolvers, typeDefs } from './graphql/index.js'
 
 async function bootstrap() {
@@ -15,7 +15,7 @@ async function bootstrap() {
   const server = new ApolloServer({ typeDefs, resolvers })
   await server.start()
 
-  app.use('/graphql', expressMiddleware(server))
+  app.use('/graphql', expressMiddleware(server, { context: buildContext }))
 
   app.listen(env.PORT, () => {
     console.log(`Servidor iniciado na porta ${env.PORT}`)

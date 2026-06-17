@@ -3,6 +3,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import authResolvers from './modules/auth/resolvers.js'
+import usersResolvers from './modules/users/resolvers.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -21,6 +22,7 @@ export const typeDefs = `#graphql
 export const resolvers = {
   Query: {
     _health: () => 'ok',
+    ...usersResolvers.Query,
   },
   Mutation: {
     ...authResolvers.Mutation,

@@ -8,7 +8,7 @@ A ideia é simples: cada pessoa controla suas categorias e transações, sem ver
 
 ## Sobre o projeto
 
-O backend usa GraphQL no estilo schema-first (contrato em `.gql`, resolvers em TypeScript, serviços por cima do Prisma). Hoje o servidor sobe, valida variáveis de ambiente, tem o banco modelado e expõe **signup** e **login**. CRUD de categorias/transações e rotas protegidas ainda não estão na API.
+O backend usa GraphQL no estilo schema-first (contrato em `.gql`, resolvers em TypeScript, serviços por cima do Prisma). Hoje o servidor sobe, valida variáveis de ambiente, tem o banco modelado, expõe **signup** e **login**, e já valida JWT nas rotas protegidas via contexto GraphQL. CRUD de categorias/transações ainda não está na API.
 
 **O que está rodando hoje:** Node 20+, TypeScript, Express, Apollo Server, Prisma com SQLite, Zod para env, bcryptjs, jsonwebtoken, Vitest e ESLint.
 
@@ -25,21 +25,24 @@ Financy-fc/
     │   └── migrations/
     ├── src/
     │   ├── index.ts              # Express + Apollo
-    │   ├── config/env/           # validação do .env
+    │   ├── config/
+    │   │   ├── env/              # validação do .env
+    │   │   └── context/          # buildContext + validate() do JWT
     │   ├── graphql/
     │   │   ├── index.ts          # composição manual do schema (bootstrap)
-    │   │   └── modules/          # auth e users com schema; demais ainda vazios
+    │   │   └── modules/          # auth e users com schema/resolvers; demais ainda vazios
     │   ├── services/
     │   │   └── auth.service.ts   # signup e login
     │   ├── helpers/
     │   │   ├── password.ts       # hash e verificação de senha
     │   │   └── jwt.ts            # criação e validação de token
     │   └── errors/
+    │       └── UnauthorizedError.ts
     ├── tests/                    # unitários, GraphQL e smoke HTTP de auth
     └── .env.example
 ```
 
-Os módulos `categories/` e `transactions/` ainda estão vazios. A pasta `errors/` também — sem erros customizados por enquanto.
+Os módulos `categories/` e `transactions/` ainda estão vazios.
 
 ---
 
@@ -64,13 +67,14 @@ O arquivo `src/config/env/index.ts` lê o `.env`, valida com Zod e **não deixa 
 
 ### Servidor GraphQL
 
-O `src/index.ts` monta Express + CORS (origem do `FRONTEND_URL`) + Apollo em `/graphql`.
+O `src/index.ts` monta Express + CORS (origem do `FRONTEND_URL`) + Apollo em `/graphql`, injetando `buildContext` em cada request.
 
-O schema expõe a query de saúde e as mutations de autenticação:
+O schema expõe a query de saúde, a query protegida `me` e as mutations de autenticação:
 
 ```graphql
 type Query {
   _health: String!
+  me: User!
 }
 
 type Mutation {
@@ -79,7 +83,7 @@ type Mutation {
 }
 ```
 
-`signup` e `login` retornam `token` + `user` (sem campo `password`). O wiring em `graphql/index.ts` é manual por enquanto — carregamento automático de todos os módulos fica para uma task futura.
+`signup` e `login` são públicos e retornam `token` + `user` (sem campo `password`). A query `me` exige `Authorization: Bearer <token>` e devolve o usuário logado. O wiring em `graphql/index.ts` é manual por enquanto — carregamento automático de todos os módulos fica para uma task futura.
 
 - `npm run dev` — nodemon + tsx, recarrega ao salvar
 - `npm run start` — roda o build compilado
@@ -116,6 +120,16 @@ O `auth.service.ts` valida campos, garante email único, persiste senha hasheada
 
 Testes em `tests/` cobrem helpers, service, resolvers, schema GraphQL, mutations in-process e smoke HTTP.
 
+### Contexto de autenticação
+
+Cada request GraphQL recebe um contexto com `validate()`, montado em `src/config/context/index.ts`:
+
+- lê o header `Authorization: Bearer <token>`
+- valida o JWT com o helper existente
+- retorna o `userId` autenticado ou lança `UnauthorizedError` (`Usuário não autenticado.`)
+
+O resolver `me` em `graphql/modules/users/` usa esse fluxo para buscar o usuário atual no Prisma. `signup` e `login` continuam acessíveis sem token.
+
 ---
 
 ## Rodando localmente
@@ -150,6 +164,15 @@ Exemplo de signup:
 curl -X POST http://localhost:4000/graphql \
   -H "Content-Type: application/json" \
   -d '{"query":"mutation { signup(data: { email: \"voce@example.com\", password: \"senha123\" }) { token user { id email } } }"}'
+```
+
+Exemplo de `me` (use o `token` retornado no signup/login):
+
+```bash
+curl -X POST http://localhost:4000/graphql \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer SEU_TOKEN_AQUI" \
+  -d '{"query":"{ me { id email } }"}'
 ```
 
 Outros comandos úteis: `npm run check` (validação completa), `npm run test`, `npm run build`.

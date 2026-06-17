@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 
 import authResolvers from './modules/auth/resolvers.js'
 import categoriesResolvers from './modules/categories/resolvers.js'
+import transactionsResolvers from './modules/transactions/resolvers.js'
 import usersResolvers from './modules/users/resolvers.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -19,6 +20,7 @@ export const typeDefs = `#graphql
   ${loadSchema('./modules/users/schema.gql')}
   ${loadSchema('./modules/auth/schema.gql')}
   ${loadSchema('./modules/categories/schema.gql')}
+  ${loadSchema('./modules/transactions/schema.gql')}
 `
 
 export const resolvers = {
@@ -26,10 +28,13 @@ export const resolvers = {
     _health: () => 'ok',
     ...usersResolvers.Query,
     ...categoriesResolvers.Query,
+    ...transactionsResolvers.Query,
   },
   Mutation: {
     ...authResolvers.Mutation,
     ...categoriesResolvers.Mutation,
+    ...transactionsResolvers.Mutation,
   },
   Category: categoriesResolvers.Category,
+  Transaction: transactionsResolvers.Transaction,
 }

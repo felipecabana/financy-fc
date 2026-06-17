@@ -1,0 +1,27 @@
+import cors from 'cors'
+import express from 'express'
+import { ApolloServer } from '@apollo/server'
+import { expressMiddleware } from '@as-integrations/express4'
+
+import { env } from './config/env/index.js'
+import { resolvers, typeDefs } from './graphql/index.js'
+
+async function bootstrap() {
+  const app = express()
+
+  app.use(cors({ origin: env.FRONTEND_URL, credentials: true }))
+  app.use(express.json())
+
+  const server = new ApolloServer({ typeDefs, resolvers })
+  await server.start()
+
+  app.use('/graphql', expressMiddleware(server))
+
+  app.listen(env.PORT, () => {
+    console.log(`Servidor iniciado na porta ${env.PORT}`)
+  })
+}
+
+bootstrap().catch(() => {
+  process.exit(1)
+})

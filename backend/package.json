@@ -9,17 +9,32 @@
     "node": ">=20.0.0"
   },
   "scripts": {
+    "dev": "nodemon --exec tsx src/index.ts",
     "build": "tsc",
+    "start": "node dist/src/index.js",
     "type-check": "tsc --noEmit",
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run",
     "validate": "npm run type-check && npm run lint && npm run test",
     "check": "npm run validate && npm run build"
   },
+  "dependencies": {
+    "@apollo/server": "^5.5.1",
+    "@as-integrations/express4": "^1.1.2",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^4.21.2",
+    "graphql": "^16.14.2",
+    "zod": "^4.4.3"
+  },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^4.17.21",
     "@types/node": "^25.9.3",
     "eslint": "^9.39.4",
+    "nodemon": "^3.1.14",
+    "tsx": "^4.22.4",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.61.1",
     "vitest": "^4.1.9"

@@ -1,6 +1,6 @@
 # Financy
 
-Projeto de finanças pessoais desenvolvido como entrega da pós-graduação **Full Stack 360 com IA**.
+Projeto de finanças pessoais desenvolvido como entrega da pós-graduação **Tech Developer 360 Full Stack e IA**.
 
 A ideia é simples: cada pessoa controla suas categorias e transações, sem ver dados de outro usuário. Por enquanto só o **backend** existe neste repositório — uma API GraphQL em Node.js + TypeScript. O frontend React ainda não foi iniciado.
 
@@ -8,7 +8,7 @@ A ideia é simples: cada pessoa controla suas categorias e transações, sem ver
 
 ## Sobre o projeto
 
-O backend usa GraphQL no estilo schema-first (contrato em `.gql`, resolvers em TypeScript, serviços por cima do Prisma). Hoje o servidor já sobe, valida variáveis de ambiente e tem o banco modelado; as operações de negócio (login, CRUD etc.) ainda não estão expostas na API.
+O backend usa GraphQL no estilo schema-first (contrato em `.gql`, resolvers em TypeScript, serviços por cima do Prisma). Hoje o servidor sobe, valida variáveis de ambiente, tem o banco modelado e expõe **signup** e **login**. CRUD de categorias/transações e rotas protegidas ainda não estão na API.
 
 **O que está rodando hoje:** Node 20+, TypeScript, Express, Apollo Server, Prisma com SQLite, Zod para env, bcryptjs, jsonwebtoken, Vitest e ESLint.
 
@@ -27,18 +27,19 @@ Financy-fc/
     │   ├── index.ts              # Express + Apollo
     │   ├── config/env/           # validação do .env
     │   ├── graphql/
-    │   │   ├── index.ts          # query _health (placeholder)
-    │   │   └── modules/          # auth, users, categories, transactions
+    │   │   ├── index.ts          # composição manual do schema (bootstrap)
+    │   │   └── modules/          # auth e users com schema; demais ainda vazios
     │   ├── services/
+    │   │   └── auth.service.ts   # signup e login
     │   ├── helpers/
     │   │   ├── password.ts       # hash e verificação de senha
     │   │   └── jwt.ts            # criação e validação de token
     │   └── errors/
-    ├── tests/
+    ├── tests/                    # unitários, GraphQL e smoke HTTP de auth
     └── .env.example
 ```
 
-As pastas `modules/`, `services/` e `errors/` ainda estão vazias — sem resolvers, services ou erros customizados por enquanto.
+Os módulos `categories/` e `transactions/` ainda estão vazios. A pasta `errors/` também — sem erros customizados por enquanto.
 
 ---
 
@@ -65,15 +66,20 @@ O arquivo `src/config/env/index.ts` lê o `.env`, valida com Zod e **não deixa 
 
 O `src/index.ts` monta Express + CORS (origem do `FRONTEND_URL`) + Apollo em `/graphql`.
 
-Por enquanto o schema só tem uma query de saúde:
+O schema expõe a query de saúde e as mutations de autenticação:
 
 ```graphql
 type Query {
   _health: String!
 }
+
+type Mutation {
+  signup(data: SignupInput!): AuthPayload!
+  login(data: LoginInput!): AuthPayload!
+}
 ```
 
-Responde `"ok"`. Serve pra confirmar que a API está de pé — dá pra testar com `{ _health }` ou `{ __typename }`.
+`signup` e `login` retornam `token` + `user` (sem campo `password`). O wiring em `graphql/index.ts` é manual por enquanto — carregamento automático de todos os módulos fica para uma task futura.
 
 - `npm run dev` — nodemon + tsx, recarrega ao salvar
 - `npm run start` — roda o build compilado
@@ -99,14 +105,16 @@ Scripts do banco:
 
 O arquivo `dev.db` é criado localmente em `backend/prisma/` e não vai pro git.
 
-### Helpers de autenticação
+### Helpers e serviço de autenticação
 
-Utilitários em `src/helpers/` para uso futuro em signup/login — ainda não expostos na API GraphQL.
+Utilitários em `src/helpers/` usados pelo `auth.service.ts`:
 
 - **`password.ts`** — `hashPassword` e `verifyPassword` com bcryptjs (10 salt rounds)
 - **`jwt.ts`** — `createToken` e `verifyToken` com payload `{ id }`, expiração de 1 dia e secret do `JWT_SECRET`
 
-Testes unitários em `tests/password.test.ts` e `tests/jwt.test.ts`.
+O `auth.service.ts` valida campos, garante email único, persiste senha hasheada e retorna o usuário público com JWT. Mensagens de erro em português (`Email já cadastrado.`, `Credenciais inválidas.`).
+
+Testes em `tests/` cobrem helpers, service, resolvers, schema GraphQL, mutations in-process e smoke HTTP.
 
 ---
 
@@ -126,7 +134,7 @@ npm run dev
 
 GraphQL em `http://localhost:4000/graphql`.
 
-Teste rápido:
+Teste rápido de saúde:
 
 ```bash
 curl -X POST http://localhost:4000/graphql \
@@ -135,6 +143,14 @@ curl -X POST http://localhost:4000/graphql \
 ```
 
 Deve voltar `{"data":{"_health":"ok"}}`.
+
+Exemplo de signup:
+
+```bash
+curl -X POST http://localhost:4000/graphql \
+  -H "Content-Type: application/json" \
+  -d '{"query":"mutation { signup(data: { email: \"voce@example.com\", password: \"senha123\" }) { token user { id email } } }"}'
+```
 
 Outros comandos úteis: `npm run check` (validação completa), `npm run test`, `npm run build`.
 

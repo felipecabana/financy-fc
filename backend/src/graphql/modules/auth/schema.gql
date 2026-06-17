@@ -1,0 +1,19 @@
+input SignupInput {
+  email: String!
+  password: String!
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+type AuthPayload {
+  token: String!
+  user: User!
+}
+
+type Mutation {
+  signup(data: SignupInput!): AuthPayload!
+  login(data: LoginInput!): AuthPayload!
+}

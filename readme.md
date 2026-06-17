@@ -8,7 +8,7 @@ A ideia é simples: cada pessoa controla suas categorias e transações, sem ver
 
 ## Sobre o projeto
 
-O backend usa GraphQL no estilo schema-first (contrato em `.gql`, resolvers em TypeScript, serviços por cima do Prisma). Hoje o servidor sobe, valida variáveis de ambiente, tem o banco modelado, expõe **signup** e **login**, valida JWT nas rotas protegidas via contexto GraphQL e já oferece **CRUD de categorias** escopado por usuário. Transações ainda não estão na API.
+O backend usa GraphQL no estilo schema-first (contrato em `.gql`, resolvers em TypeScript, serviços por cima do Prisma). Hoje o servidor sobe, valida variáveis de ambiente, tem o banco modelado, expõe **signup** e **login**, valida JWT nas rotas protegidas via contexto GraphQL e já oferece **CRUD de categorias e transações** escopado por usuário.
 
 **O que está rodando hoje:** Node 20+, TypeScript, Express, Apollo Server, Prisma com SQLite, Zod para env, bcryptjs, jsonwebtoken, Vitest e ESLint.
 
@@ -30,10 +30,11 @@ Financy-fc/
     │   │   └── context/          # buildContext + validate() do JWT
     │   ├── graphql/
     │   │   ├── index.ts          # composição manual do schema (bootstrap)
-    │   │   └── modules/          # auth, users e categories com schema/resolvers
+    │   │   └── modules/          # auth, users, categories e transactions com schema/resolvers
     │   ├── services/
     │   │   ├── auth.service.ts   # signup e login
-    │   │   └── category.service.ts
+    │   │   ├── category.service.ts
+    │   │   └── transaction.service.ts
     │   ├── helpers/
     │   │   ├── password.ts       # hash e verificação de senha
     │   │   └── jwt.ts            # criação e validação de token
@@ -42,8 +43,6 @@ Financy-fc/
     ├── tests/                    # unitários, GraphQL in-process e smoke HTTP
     └── .env.example
 ```
-
-O módulo `transactions/` ainda está vazio.
 
 ---
 
@@ -70,7 +69,7 @@ O arquivo `src/config/env/index.ts` lê o `.env`, valida com Zod e **não deixa 
 
 O `src/index.ts` monta Express + CORS (origem do `FRONTEND_URL`) + Apollo em `/graphql`, injetando `buildContext` em cada request.
 
-O schema expõe a query de saúde, a query protegida `me`, as mutations de autenticação e o CRUD de categorias:
+O schema expõe a query de saúde, a query protegida `me`, as mutations de autenticação e o CRUD de categorias e transações:
 
 ```graphql
 type Query {
@@ -78,6 +77,8 @@ type Query {
   me: User!
   listCategories: [Category!]!
   getCategory(id: String!): Category!
+  listTransactions: [Transaction!]!
+  getTransaction(id: String!): Transaction!
 }
 
 type Mutation {
@@ -86,10 +87,13 @@ type Mutation {
   createCategory(data: CreateCategoryInput!): Category!
   updateCategory(id: String!, data: UpdateCategoryInput!): Category!
   deleteCategory(id: String!): Boolean!
+  createTransaction(data: CreateTransactionInput!): Transaction!
+  updateTransaction(id: String!, data: UpdateTransactionInput!): Transaction!
+  deleteTransaction(id: String!): Boolean!
 }
 ```
 
-`signup` e `login` são públicos e retornam `token` + `user` (sem campo `password`). `me` e as operações de categoria exigem `Authorization: Bearer <token>`. O wiring em `graphql/index.ts` é manual por enquanto — carregamento automático de todos os módulos fica para uma task futura.
+`signup` e `login` são públicos e retornam `token` + `user` (sem campo `password`). `me` e as operações de categoria e transação exigem `Authorization: Bearer <token>`. O wiring em `graphql/index.ts` é manual por enquanto — carregamento automático de todos os módulos fica para uma etapa futura.
 
 - `npm run dev` — nodemon + tsx, recarrega ao salvar
 - `npm run start` — roda o build compilado
@@ -144,6 +148,14 @@ Validações e erros em português, por exemplo: `Nome é obrigatório.`, `Categ
 
 Testes em `tests/` cobrem service, resolvers, schema GraphQL, mutations in-process e smoke HTTP de categorias.
 
+### CRUD de transações
+
+O módulo em `graphql/modules/transactions/` delega para `transaction.service.ts`, com o mesmo critério de isolamento por `userId`. Cada usuário só acessa as próprias transações; a categoria vinculada (`categoryId`) é opcional e precisa pertencer ao mesmo usuário.
+
+Validações e erros em português, por exemplo: `Título é obrigatório.`, `Transação não encontrada.`, `Sem permissão para realizar esta ação.`
+
+Testes em `tests/` cobrem service, resolvers, schema GraphQL, mutations in-process e smoke HTTP de transações.
+
 ---
 
 ## Rodando localmente
@@ -196,6 +208,15 @@ curl -X POST http://localhost:4000/graphql \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer SEU_TOKEN_AQUI" \
   -d '{"query":"mutation { createCategory(data: { name: \"Alimentação\" }) { id name } }"}'
+```
+
+Exemplo de `createTransaction`:
+
+```bash
+curl -X POST http://localhost:4000/graphql \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer SEU_TOKEN_AQUI" \
+  -d '{"query":"mutation { createTransaction(data: { title: \"Salário\", amount: 5000, type: \"receita\" }) { id title amount type } }"}'
 ```
 
 Outros comandos úteis: `npm run check` (validação completa), `npm run test`, `npm run build`.

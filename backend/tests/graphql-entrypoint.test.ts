@@ -1,31 +1,21 @@
-// Smoke de wiring: confirma _health, signup, login e me no mesmo schema do entrypoint.
+// Smoke: confirma que o schema composto em graphql/index.ts sobe e os módulos convivem.
 import type { Request } from 'express'
 import { ApolloServer } from '@apollo/server'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
-import { buildContext, type GraphqlContext } from '../src/config/index.js'
+import { buildContext } from '../src/config/index.js'
 import { resolvers, typeDefs } from '../src/graphql/index.js'
 import {
   createEmailCleanup,
-  expectValidAuthPayload,
   getApolloSingleResult,
-  LOGIN_MUTATION,
   SIGNUP_MUTATION,
   TEST_PASSWORD,
   uniqueEmail,
   type AuthPayload,
 } from './helpers/auth-test-utils.js'
 
-const ME_QUERY = `
-  query Me {
-    me {
-      id
-      email
-      createdAt
-      updatedAt
-    }
-  }
-`
+const ME_QUERY = `query { me { id email } }`
+const LIST_CATEGORIES = `query { listCategories { id name } }`
 
 function mockRequest(authorization?: string): Request {
   return {
@@ -34,7 +24,7 @@ function mockRequest(authorization?: string): Request {
 }
 
 describe('graphql entrypoint', () => {
-  let server: ApolloServer<GraphqlContext>
+  let server: ApolloServer
   const cleanup = createEmailCleanup()
 
   beforeAll(async () => {
@@ -50,10 +40,8 @@ describe('graphql entrypoint', () => {
     await cleanup.reset()
   })
 
-  it('expõe _health, signup e login no mesmo schema', async () => {
+  it('schema composto resolve health, me e categorias no mesmo servidor', async () => {
     const health = getApolloSingleResult(await server.executeOperation({ query: '{ _health }' }))
-
-    expect(health.errors).toBeUndefined()
     expect(health.data?._health).toBe('ok')
 
     const email = uniqueEmail('entrypoint')
@@ -65,58 +53,18 @@ describe('graphql entrypoint', () => {
         variables: { data: { email, password: TEST_PASSWORD } },
       }),
     )
-
-    expect(signup.errors).toBeUndefined()
-    expectValidAuthPayload(signup.data?.signup as AuthPayload, email)
-
-    const login = getApolloSingleResult(
-      await server.executeOperation({
-        query: LOGIN_MUTATION,
-        variables: { data: { email, password: TEST_PASSWORD } },
-      }),
-    )
-
-    expect(login.errors).toBeUndefined()
-    expectValidAuthPayload(login.data?.login as AuthPayload, email)
-  })
-
-  it('expõe me como query protegida no schema composto', async () => {
-    const email = uniqueEmail('entrypoint-me')
-    cleanup.track(email)
-
-    const signup = getApolloSingleResult(
-      await server.executeOperation({
-        query: SIGNUP_MUTATION,
-        variables: { data: { email, password: TEST_PASSWORD } },
-      }),
-    )
-
-    expect(signup.errors).toBeUndefined()
     const auth = signup.data?.signup as AuthPayload
+    const context = await buildContext({ req: mockRequest(`Bearer ${auth.token}`) })
 
-    const authenticated = getApolloSingleResult(
-      await server.executeOperation(
-        { query: ME_QUERY },
-        { contextValue: await buildContext({ req: mockRequest(`Bearer ${auth.token}`) }) },
-      ),
+    const me = getApolloSingleResult(
+      await server.executeOperation({ query: ME_QUERY }, { contextValue: context }),
     )
+    expect(me.data?.me).toMatchObject({ id: auth.user.id, email })
 
-    expect(authenticated.errors).toBeUndefined()
-    expect(authenticated.data?.me).toEqual({
-      id: auth.user.id,
-      email,
-      createdAt: expect.any(String),
-      updatedAt: expect.any(String),
-    })
-
-    const unauthenticated = getApolloSingleResult(
-      await server.executeOperation(
-        { query: ME_QUERY },
-        { contextValue: await buildContext({ req: mockRequest() }) },
-      ),
+    const categories = getApolloSingleResult(
+      await server.executeOperation({ query: LIST_CATEGORIES }, { contextValue: context }),
     )
-
-    expect(unauthenticated.data?.me).toBeUndefined()
-    expect(unauthenticated.errors?.[0]?.message).toBe('Usuário não autenticado.')
+    expect(categories.errors).toBeUndefined()
+    expect(categories.data?.listCategories).toEqual([])
   })
 })

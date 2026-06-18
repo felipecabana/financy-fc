@@ -4,7 +4,7 @@ import { ApolloServer } from '@apollo/server'
 import { expressMiddleware } from '@as-integrations/express4'
 
 import { buildContext, env } from './config/index.js'
-import { resolvers, typeDefs } from './graphql/index.js'
+import { graphql } from './graphql/index.js'
 
 async function bootstrap() {
   const app = express()
@@ -12,7 +12,7 @@ async function bootstrap() {
   app.use(cors({ origin: env.FRONTEND_URL, credentials: true }))
   app.use(express.json())
 
-  const server = new ApolloServer({ typeDefs, resolvers })
+  const server = new ApolloServer(graphql)
   await server.start()
 
   app.use('/graphql', expressMiddleware(server, { context: buildContext }))

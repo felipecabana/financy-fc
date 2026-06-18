@@ -10,7 +10,7 @@ A ideia é simples: cada pessoa controla suas categorias e transações, sem ver
 
 O backend usa GraphQL no estilo schema-first (contrato em `.gql`, resolvers em TypeScript, serviços por cima do Prisma). Hoje o servidor sobe, valida variáveis de ambiente, tem o banco modelado, expõe **signup** e **login**, valida JWT nas rotas protegidas via contexto GraphQL e já oferece **CRUD de categorias e transações** escopado por usuário.
 
-**O que está rodando hoje:** Node 20+, TypeScript, Express, Apollo Server, Prisma com SQLite, Zod para env, bcryptjs, jsonwebtoken, Vitest e ESLint.
+**O que está rodando hoje:** Node 20+, TypeScript, Express, Apollo Server, Prisma com SQLite, Zod para env, bcryptjs, jsonwebtoken, `@graphql-tools` (composição do schema), Vitest e ESLint.
 
 ---
 
@@ -29,7 +29,9 @@ Financy-fc/
     │   │   ├── env/              # validação do .env
     │   │   └── context/          # buildContext + validate() do JWT
     │   ├── graphql/
-    │   │   ├── index.ts          # composição manual do schema (bootstrap)
+    │   │   ├── index.ts          # export do schema composto
+    │   │   ├── compose.ts        # merge de SDL e resolvers dos módulos
+    │   │   ├── schema/           # SDL compartilhado (_health)
     │   │   └── modules/          # auth, users, categories e transactions com schema/resolvers
     │   ├── services/
     │   │   ├── auth.service.ts   # signup e login
@@ -51,7 +53,7 @@ Financy-fc/
 
 ### Tooling do backend
 
-Workspace em `backend/` com TypeScript strict, módulos ESM e build em `dist/`. Tem scripts para desenvolvimento (`dev`, `start`), checagem de tipos, lint, testes e um `check` que roda tudo junto.
+Workspace em `backend/` com TypeScript strict, módulos ESM e build em `dist/`. O build compila o TypeScript e copia os arquivos `.gql` para `dist/`, permitindo subir a API com `npm run start`. Tem scripts para desenvolvimento (`dev`, `start`), checagem de tipos, lint, testes e um `check` que roda tudo junto.
 
 ### Variáveis de ambiente
 
@@ -68,7 +70,9 @@ O arquivo `src/config/env/index.ts` lê o `.env`, valida com Zod e **não deixa 
 
 ### Servidor GraphQL
 
-O `src/index.ts` monta Express + CORS (origem do `FRONTEND_URL`) + Apollo em `/graphql`, injetando `buildContext` em cada request.
+O `src/index.ts` monta Express + CORS (origem do `FRONTEND_URL`) + Apollo em `/graphql`, injetando `buildContext` em cada request. O Apollo recebe o objeto `graphql` exportado por `graphql/compose.ts`.
+
+A composição do schema é feita em `graphql/compose.ts`: os arquivos `.gql` de `schema/` e `modules/` são carregados com `loadFilesSync` e unidos com `mergeTypeDefs`; os resolvers dos módulos são combinados com `mergeResolvers`. Novos domínios entram criando pasta em `modules/` com `schema.gql` e `resolvers.ts` — o wiring em `compose.ts` importa os resolvers manualmente.
 
 O schema expõe a query de saúde, a query protegida `me`, as mutations de autenticação e o CRUD de categorias e transações:
 
@@ -94,10 +98,10 @@ type Mutation {
 }
 ```
 
-`signup` e `login` são públicos e retornam `token` + `user` (sem campo `password`). `me` e as operações de categoria e transação exigem `Authorization: Bearer <token>`. O wiring em `graphql/index.ts` é manual por enquanto — carregamento automático de todos os módulos fica para uma etapa futura.
+`signup` e `login` são públicos e retornam `token` + `user` (sem campo `password`). `me` e as operações de categoria e transação exigem `Authorization: Bearer <token>`.
 
 - `npm run dev` — nodemon + tsx, recarrega ao salvar
-- `npm run start` — roda o build compilado
+- `npm run start` — roda o build compilado (`dist/`), com os `.gql` já copiados
 
 ### Banco de dados
 

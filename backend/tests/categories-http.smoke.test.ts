@@ -12,6 +12,11 @@ import {
   type AuthPayload,
   type SignupResponse,
 } from './helpers/auth-test-utils.js'
+import {
+  DOMAIN_ERROR_CODES,
+  DOMAIN_ERRORS,
+  expectGraphqlError,
+} from './helpers/domain-error-assertions.js'
 
 const CREATE_CATEGORY = `
   mutation CreateCategory($data: CreateCategoryInput!) {
@@ -32,7 +37,7 @@ const DELETE_CATEGORY = `mutation DeleteCategory($id: String!) { deleteCategory(
 const GET_CATEGORY = `query GetCategory($id: String!) { getCategory(id: $id) { id } }`
 
 const backendRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
-const smokePort = 4099
+const smokePort = 4105
 const graphqlUrl = `http://127.0.0.1:${smokePort}/graphql`
 
 async function waitForServer(process: ChildProcess) {
@@ -163,14 +168,22 @@ describe('category HTTP smoke', () => {
     )) as { errors?: Array<{ message: string }> }
 
     expect(otherList.data?.listCategories).toEqual([])
-    expect(crossRead.errors?.[0]?.message).toBe('Sem permissão para realizar esta ação.')
+    expectGraphqlError(
+      crossRead.errors?.[0],
+      DOMAIN_ERRORS.noPermission,
+      DOMAIN_ERROR_CODES.FORBIDDEN,
+    )
   })
 
   it('rejeita listCategories sem token', async () => {
     const result = (await postGraphql(LIST_CATEGORIES)) as {
-      errors?: Array<{ message: string }>
+      errors?: Array<{ message: string; extensions?: { code?: string } }>
     }
 
-    expect(result.errors?.[0]?.message).toBe('Usuário não autenticado.')
+    expectGraphqlError(
+      result.errors?.[0],
+      DOMAIN_ERRORS.unauthenticated,
+      DOMAIN_ERROR_CODES.UNAUTHORIZED,
+    )
   })
 })

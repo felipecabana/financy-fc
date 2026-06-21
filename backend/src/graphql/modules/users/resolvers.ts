@@ -1,4 +1,5 @@
 import type { GraphqlContext } from '../../../config/context/index.js'
+import { NotFoundError } from '../../../errors/NotFoundError.js'
 import { prismaClient } from '../../../../prisma/prisma.js'
 
 export default {
@@ -8,7 +9,7 @@ export default {
       const user = await prismaClient.user.findUnique({ where: { id: userId } })
 
       if (!user) {
-        throw new Error('Usuário não encontrado.')
+        throw new NotFoundError('Usuário')
       }
 
       return {

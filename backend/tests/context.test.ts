@@ -2,8 +2,12 @@ import type { Request } from 'express'
 import { describe, expect, it } from 'vitest'
 
 import { buildContext } from '../src/config/context/index.js'
-import { UnauthorizedError } from '../src/errors/UnauthorizedError.js'
 import { createToken } from '../src/helpers/jwt.js'
+import {
+  DOMAIN_ERROR_CODES,
+  DOMAIN_ERRORS,
+  expectThrownDomainError,
+} from './helpers/domain-error-assertions.js'
 
 function mockRequest(authorization?: string): Request {
   return {
@@ -25,7 +29,11 @@ describe('buildContext', () => {
   it('validate lança UnauthorizedError sem header Authorization', async () => {
     const context = await buildContext({ req: mockRequest() })
 
-    expect(() => context.validate()).toThrow(UnauthorizedError)
+    expectThrownDomainError(
+      () => context.validate(),
+      DOMAIN_ERRORS.unauthenticated,
+      DOMAIN_ERROR_CODES.UNAUTHORIZED,
+    )
   })
 
   it('validate lança UnauthorizedError sem prefixo Bearer', async () => {
@@ -34,7 +42,11 @@ describe('buildContext', () => {
       req: mockRequest(token),
     })
 
-    expect(() => context.validate()).toThrow(UnauthorizedError)
+    expectThrownDomainError(
+      () => context.validate(),
+      DOMAIN_ERRORS.unauthenticated,
+      DOMAIN_ERROR_CODES.UNAUTHORIZED,
+    )
   })
 
   it('validate lança UnauthorizedError com token inválido', async () => {
@@ -42,6 +54,10 @@ describe('buildContext', () => {
       req: mockRequest('Bearer invalid-token'),
     })
 
-    expect(() => context.validate()).toThrow(UnauthorizedError)
+    expectThrownDomainError(
+      () => context.validate(),
+      DOMAIN_ERRORS.unauthenticated,
+      DOMAIN_ERROR_CODES.UNAUTHORIZED,
+    )
   })
 })

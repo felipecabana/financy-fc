@@ -1,4 +1,5 @@
 import { prismaClient } from '../../prisma/prisma.js'
+import { UnauthorizedError } from '../errors/UnauthorizedError.js'
 import { findOwnedCategory } from '../helpers/ownership.js'
 
 interface CreateCategoryInput {
@@ -12,7 +13,7 @@ interface UpdateCategoryInput {
 class CategoryService {
   private assertName(name: string | undefined) {
     if (!name?.trim()) {
-      throw new Error('Nome é obrigatório.')
+      throw new UnauthorizedError('Nome é obrigatório.')
     }
   }
 

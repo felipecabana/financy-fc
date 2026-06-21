@@ -2,12 +2,16 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import authResolvers from '../src/graphql/modules/auth/resolvers.js'
 import {
-  AUTH_ERRORS,
   createEmailCleanup,
   expectValidAuthPayload,
   TEST_PASSWORD,
   uniqueEmail,
 } from './helpers/auth-test-utils.js'
+import {
+  DOMAIN_ERROR_CODES,
+  DOMAIN_ERRORS,
+  expectDomainError,
+} from './helpers/domain-error-assertions.js'
 
 describe('auth resolvers', () => {
   const cleanup = createEmailCleanup()
@@ -71,24 +75,28 @@ describe('auth resolvers', () => {
       {} as never,
     )
 
-    await expect(
+    await expectDomainError(
       authResolvers.Mutation.signup(
         null,
         { data: { email, password: 'other-password' } },
         {},
         {} as never,
       ),
-    ).rejects.toThrow(AUTH_ERRORS.duplicateEmail)
+      DOMAIN_ERRORS.duplicateEmail,
+      DOMAIN_ERROR_CODES.FORBIDDEN,
+    )
   })
 
   it('login propaga rejeição de credenciais inválidas', async () => {
-    await expect(
+    await expectDomainError(
       authResolvers.Mutation.login(
         null,
         { data: { email: 'missing@example.com', password: TEST_PASSWORD } },
         {},
         {} as never,
       ),
-    ).rejects.toThrow(AUTH_ERRORS.invalidCredentials)
+      DOMAIN_ERRORS.invalidCredentials,
+      DOMAIN_ERROR_CODES.UNAUTHORIZED,
+    )
   })
 })

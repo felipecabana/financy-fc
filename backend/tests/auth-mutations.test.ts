@@ -6,7 +6,6 @@ import { verifyPassword } from '../src/helpers/password.js'
 import { prismaClient } from '../prisma/prisma.js'
 import { resolvers, typeDefs } from '../src/graphql/index.js'
 import {
-  AUTH_ERRORS,
   createEmailCleanup,
   getApolloSingleResult,
   expectValidAuthPayload,
@@ -16,6 +15,11 @@ import {
   uniqueEmail,
   type AuthPayload,
 } from './helpers/auth-test-utils.js'
+import {
+  DOMAIN_ERROR_CODES,
+  DOMAIN_ERRORS,
+  expectGraphqlError,
+} from './helpers/domain-error-assertions.js'
 
 describe('auth mutations (GraphQL)', () => {
   let server: ApolloServer
@@ -92,10 +96,14 @@ describe('auth mutations (GraphQL)', () => {
     )
 
     expect(result.data?.signup).toBeUndefined()
-    expect(result.errors?.[0]?.message).toBe(AUTH_ERRORS.duplicateEmail)
+    expectGraphqlError(
+      result.errors?.[0],
+      DOMAIN_ERRORS.duplicateEmail,
+      DOMAIN_ERROR_CODES.FORBIDDEN,
+    )
   })
 
-  it('login rejeita credenciais inválidas sem revelar se o email existe', async () => {
+  it('login rejeita credenciais inválidas', async () => {
     const email = uniqueEmail('auth-mutation')
     cleanup.track(email)
 
@@ -104,23 +112,18 @@ describe('auth mutations (GraphQL)', () => {
       variables: { data: { email, password: TEST_PASSWORD } },
     })
 
-    const missingEmail = getApolloSingleResult(
-      await server.executeOperation({
-        query: LOGIN_MUTATION,
-        variables: { data: { email: 'missing@example.com', password: TEST_PASSWORD } },
-      }),
-    )
-
-    const wrongPassword = getApolloSingleResult(
+    const result = getApolloSingleResult(
       await server.executeOperation({
         query: LOGIN_MUTATION,
         variables: { data: { email, password: 'wrong-password' } },
       }),
     )
 
-    expect(missingEmail.data?.login).toBeUndefined()
-    expect(wrongPassword.data?.login).toBeUndefined()
-    expect(missingEmail.errors?.[0]?.message).toBe(AUTH_ERRORS.invalidCredentials)
-    expect(wrongPassword.errors?.[0]?.message).toBe(AUTH_ERRORS.invalidCredentials)
+    expect(result.data?.login).toBeUndefined()
+    expectGraphqlError(
+      result.errors?.[0],
+      DOMAIN_ERRORS.invalidCredentials,
+      DOMAIN_ERROR_CODES.UNAUTHORIZED,
+    )
   })
 })

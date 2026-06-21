@@ -4,12 +4,16 @@ import { prismaClient } from '../prisma/prisma.js'
 import { verifyPassword } from '../src/helpers/password.js'
 import authService from '../src/services/auth.service.js'
 import {
-  AUTH_ERRORS,
   createEmailCleanup,
   expectValidAuthPayload,
   TEST_PASSWORD,
   uniqueEmail,
 } from './helpers/auth-test-utils.js'
+import {
+  DOMAIN_ERROR_CODES,
+  DOMAIN_ERRORS,
+  expectDomainError,
+} from './helpers/domain-error-assertions.js'
 
 describe('auth service', () => {
   const cleanup = createEmailCleanup()
@@ -43,17 +47,23 @@ describe('auth service', () => {
 
     await authService.signup({ email, password: TEST_PASSWORD })
 
-    await expect(authService.signup({ email, password: 'other-password' })).rejects.toThrow(
-      AUTH_ERRORS.duplicateEmail,
+    await expectDomainError(
+      authService.signup({ email, password: 'other-password' }),
+      DOMAIN_ERRORS.duplicateEmail,
+      DOMAIN_ERROR_CODES.FORBIDDEN,
     )
   })
 
   it('signup rejeita campos obrigatórios ausentes', async () => {
-    await expect(authService.signup({ email: '', password: TEST_PASSWORD })).rejects.toThrow(
-      AUTH_ERRORS.requiredFields,
+    await expectDomainError(
+      authService.signup({ email: '', password: TEST_PASSWORD }),
+      DOMAIN_ERRORS.requiredFields,
+      DOMAIN_ERROR_CODES.UNAUTHORIZED,
     )
-    await expect(authService.signup({ email: 'user@example.com', password: '' })).rejects.toThrow(
-      AUTH_ERRORS.requiredFields,
+    await expectDomainError(
+      authService.signup({ email: 'user@example.com', password: '' }),
+      DOMAIN_ERRORS.requiredFields,
+      DOMAIN_ERROR_CODES.UNAUTHORIZED,
     )
   })
 
@@ -73,11 +83,15 @@ describe('auth service', () => {
 
     await authService.signup({ email, password: TEST_PASSWORD })
 
-    await expect(
+    await expectDomainError(
       authService.login({ email: 'missing@example.com', password: TEST_PASSWORD }),
-    ).rejects.toThrow(AUTH_ERRORS.invalidCredentials)
-    await expect(authService.login({ email, password: 'wrong-password' })).rejects.toThrow(
-      AUTH_ERRORS.invalidCredentials,
+      DOMAIN_ERRORS.invalidCredentials,
+      DOMAIN_ERROR_CODES.UNAUTHORIZED,
+    )
+    await expectDomainError(
+      authService.login({ email, password: 'wrong-password' }),
+      DOMAIN_ERRORS.invalidCredentials,
+      DOMAIN_ERROR_CODES.UNAUTHORIZED,
     )
   })
 })

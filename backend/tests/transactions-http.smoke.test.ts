@@ -10,6 +10,11 @@ import {
   TEST_PASSWORD,
   uniqueEmail,
 } from './helpers/auth-test-utils.js'
+import {
+  DOMAIN_ERROR_CODES,
+  DOMAIN_ERRORS,
+  expectGraphqlError,
+} from './helpers/domain-error-assertions.js'
 
 const CREATE_TRANSACTION = `
   mutation CreateTransaction($data: CreateTransactionInput!) {
@@ -30,7 +35,7 @@ const DELETE_TRANSACTION = `mutation DeleteTransaction($id: String!) { deleteTra
 const GET_TRANSACTION = `query GetTransaction($id: String!) { getTransaction(id: $id) { id title } }`
 
 const backendRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
-const smokePort = 4100
+const smokePort = 4106
 const graphqlUrl = `http://127.0.0.1:${smokePort}/graphql`
 
 async function waitForServer(process: ChildProcess) {
@@ -147,11 +152,19 @@ describe('transaction HTTP smoke', () => {
     const crossRead = await postGraphql(GET_TRANSACTION, { id: transactionId }, other.token)
 
     expect(otherList.data.listTransactions).toEqual([])
-    expect(crossRead.errors[0].message).toBe('Sem permissão para realizar esta ação.')
+    expectGraphqlError(
+      crossRead.errors[0],
+      DOMAIN_ERRORS.noPermission,
+      DOMAIN_ERROR_CODES.FORBIDDEN,
+    )
   })
 
   it('barra listTransactions sem token', async () => {
     const result = await postGraphql(LIST_TRANSACTIONS)
-    expect(result.errors[0].message).toBe('Usuário não autenticado.')
+    expectGraphqlError(
+      result.errors[0],
+      DOMAIN_ERRORS.unauthenticated,
+      DOMAIN_ERROR_CODES.UNAUTHORIZED,
+    )
   })
 })

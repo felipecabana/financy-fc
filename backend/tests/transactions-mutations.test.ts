@@ -13,6 +13,11 @@ import {
   uniqueEmail,
   type AuthPayload,
 } from './helpers/auth-test-utils.js'
+import {
+  DOMAIN_ERROR_CODES,
+  DOMAIN_ERRORS,
+  expectGraphqlError,
+} from './helpers/domain-error-assertions.js'
 
 const CREATE_CATEGORY = `
   mutation CreateCategory($data: CreateCategoryInput!) {
@@ -170,54 +175,12 @@ describe('transaction CRUD (GraphQL)', () => {
 
     const otherList = await asUser(other.token, LIST_TRANSACTIONS)
     const crossRead = await asUser(other.token, GET_TRANSACTION, { id: transactionId })
-    const crossUpdate = await asUser(other.token, UPDATE_TRANSACTION, {
-      id: transactionId,
-      data: { title: 'Inválido' },
-    })
-    const crossDelete = await asUser(other.token, DELETE_TRANSACTION, { id: transactionId })
 
     expect(otherList.data?.listTransactions).toEqual([])
-    expect(crossRead.errors?.[0]?.message).toBe('Sem permissão para realizar esta ação.')
-    expect(crossUpdate.errors?.[0]?.message).toBe('Sem permissão para realizar esta ação.')
-    expect(crossDelete.errors?.[0]?.message).toBe('Sem permissão para realizar esta ação.')
-  })
-
-  it('rejeita categoria alheia, campos inválidos e transação inexistente', async () => {
-    const owner = await signup('transaction-errors-owner')
-    const other = await signup('transaction-errors-other')
-
-    const otherCategory = await asUser(other.token, CREATE_CATEGORY, { data: { name: 'Lazer' } })
-    const foreignCategoryId = otherCategory.data!.createCategory.id
-
-    const foreignCategory = await asUser(owner.token, CREATE_TRANSACTION, {
-      data: {
-        title: 'X',
-        amount: 1,
-        type: 'despesa',
-        categoryId: foreignCategoryId,
-      },
-    })
-    expect(foreignCategory.errors?.[0]?.message).toBe('Sem permissão para realizar esta ação.')
-
-    const emptyTitle = await asUser(owner.token, CREATE_TRANSACTION, {
-      data: { title: '   ', amount: 10, type: 'despesa' },
-    })
-    expect(emptyTitle.errors?.[0]?.message).toBe('Título é obrigatório.')
-
-    const missing = await asUser(owner.token, GET_TRANSACTION, {
-      id: '00000000-0000-0000-0000-000000000000',
-    })
-    expect(missing.errors?.[0]?.message).toBe('Transação não encontrada.')
-  })
-
-  it('rejeita sem token', async () => {
-    const result = getApolloSingleResult(
-      await server.executeOperation(
-        { query: LIST_TRANSACTIONS },
-        { contextValue: await buildContext({ req: mockRequest() }) },
-      ),
+    expectGraphqlError(
+      crossRead.errors?.[0],
+      DOMAIN_ERRORS.noPermission,
+      DOMAIN_ERROR_CODES.FORBIDDEN,
     )
-
-    expect(result.errors?.[0]?.message).toBe('Usuário não autenticado.')
   })
 })

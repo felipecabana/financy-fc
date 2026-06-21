@@ -2,10 +2,14 @@ import type { Request } from 'express'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { buildContext } from '../src/config/context/index.js'
-import { UnauthorizedError } from '../src/errors/UnauthorizedError.js'
 import authResolvers from '../src/graphql/modules/auth/resolvers.js'
 import usersResolvers from '../src/graphql/modules/users/resolvers.js'
 import { createEmailCleanup, TEST_PASSWORD, uniqueEmail } from './helpers/auth-test-utils.js'
+import {
+  DOMAIN_ERROR_CODES,
+  DOMAIN_ERRORS,
+  expectDomainError,
+} from './helpers/domain-error-assertions.js'
 
 function mockRequest(authorization?: string): Request {
   return {
@@ -49,8 +53,10 @@ describe('users me resolver', () => {
   it('lança UnauthorizedError sem token', async () => {
     const context = await buildContext({ req: mockRequest() })
 
-    await expect(
+    await expectDomainError(
       usersResolvers.Query.me(null, {}, context, {} as never),
-    ).rejects.toThrow(UnauthorizedError)
+      DOMAIN_ERRORS.unauthenticated,
+      DOMAIN_ERROR_CODES.UNAUTHORIZED,
+    )
   })
 })

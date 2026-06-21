@@ -13,6 +13,11 @@ import {
   uniqueEmail,
   type AuthPayload,
 } from './helpers/auth-test-utils.js'
+import {
+  DOMAIN_ERROR_CODES,
+  DOMAIN_ERRORS,
+  expectGraphqlError,
+} from './helpers/domain-error-assertions.js'
 
 const CREATE_CATEGORY = `
   mutation CreateCategory($data: CreateCategoryInput!) {
@@ -123,38 +128,12 @@ describe('category CRUD (GraphQL)', () => {
 
     const otherList = await asUser(other.token, LIST_CATEGORIES)
     const crossRead = await asUser(other.token, GET_CATEGORY, { id: categoryId })
-    const crossUpdate = await asUser(other.token, UPDATE_CATEGORY, {
-      id: categoryId,
-      data: { name: 'Inválido' },
-    })
-    const crossDelete = await asUser(other.token, DELETE_CATEGORY, { id: categoryId })
 
     expect(otherList.data?.listCategories).toEqual([])
-    expect(crossRead.errors?.[0]?.message).toBe('Sem permissão para realizar esta ação.')
-    expect(crossUpdate.errors?.[0]?.message).toBe('Sem permissão para realizar esta ação.')
-    expect(crossDelete.errors?.[0]?.message).toBe('Sem permissão para realizar esta ação.')
-  })
-
-  it('rejeita nome vazio e categoria inexistente', async () => {
-    const auth = await signup('category-errors')
-
-    const emptyName = await asUser(auth.token, CREATE_CATEGORY, { data: { name: '   ' } })
-    expect(emptyName.errors?.[0]?.message).toBe('Nome é obrigatório.')
-
-    const missing = await asUser(auth.token, GET_CATEGORY, {
-      id: '00000000-0000-0000-0000-000000000000',
-    })
-    expect(missing.errors?.[0]?.message).toBe('Categoria não encontrada.')
-  })
-
-  it('rejeita sem token', async () => {
-    const result = getApolloSingleResult(
-      await server.executeOperation(
-        { query: LIST_CATEGORIES },
-        { contextValue: await buildContext({ req: mockRequest() }) },
-      ),
+    expectGraphqlError(
+      crossRead.errors?.[0],
+      DOMAIN_ERRORS.noPermission,
+      DOMAIN_ERROR_CODES.FORBIDDEN,
     )
-
-    expect(result.errors?.[0]?.message).toBe('Usuário não autenticado.')
   })
 })

@@ -1,4 +1,5 @@
 import { prismaClient } from '../../prisma/prisma.js'
+import { UnauthorizedError } from '../errors/UnauthorizedError.js'
 import { assertOwnedCategory, findOwnedTransaction } from '../helpers/ownership.js'
 
 interface CreateTransactionInput {
@@ -18,19 +19,19 @@ interface UpdateTransactionInput {
 class TransactionService {
   private assertTitle(title: string | undefined) {
     if (!title?.trim()) {
-      throw new Error('Título é obrigatório.')
+      throw new UnauthorizedError('Título é obrigatório.')
     }
   }
 
   private assertAmount(amount: number | undefined) {
     if (amount === undefined || amount === null || Number.isNaN(amount)) {
-      throw new Error('Valor é obrigatório.')
+      throw new UnauthorizedError('Valor é obrigatório.')
     }
   }
 
   private assertType(type: string | undefined) {
     if (!type?.trim()) {
-      throw new Error('Tipo é obrigatório.')
+      throw new UnauthorizedError('Tipo é obrigatório.')
     }
   }
 

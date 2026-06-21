@@ -8,7 +8,7 @@ A ideia é simples: cada pessoa controla suas categorias e transações, sem ver
 
 ## Sobre o projeto
 
-O backend usa GraphQL no estilo schema-first (contrato em `.gql`, resolvers em TypeScript, serviços por cima do Prisma). Hoje o servidor sobe, valida variáveis de ambiente, tem o banco modelado, expõe **signup** e **login**, valida JWT nas rotas protegidas via contexto GraphQL e já oferece **CRUD de categorias e transações** escopado por usuário.
+O backend usa GraphQL no estilo schema-first (contrato em `.gql`, resolvers em TypeScript, serviços por cima do Prisma). Hoje o servidor sobe, valida variáveis de ambiente, tem o banco modelado, expõe **signup** e **login**, valida JWT nas rotas protegidas via contexto GraphQL, já oferece **CRUD de categorias e transações** escopado por usuário e **normaliza erros de domínio** na resposta GraphQL com códigos estáveis (`UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`).
 
 **O que está rodando hoje:** Node 20+, TypeScript, Express, Apollo Server, Prisma com SQLite, Zod para env, bcryptjs, jsonwebtoken, `@graphql-tools` (composição do schema), Vitest e ESLint.
 
@@ -27,7 +27,8 @@ Financy-fc/
     │   ├── index.ts              # Express + Apollo
     │   ├── config/
     │   │   ├── env/              # validação do .env
-    │   │   └── context/          # buildContext + validate() do JWT
+    │   │   ├── context/          # buildContext + validate() do JWT
+    │   │   └── formatError/      # normalização de erros GraphQL na resposta
     │   ├── graphql/
     │   │   ├── index.ts          # export do schema composto
     │   │   ├── compose.ts        # merge de SDL e resolvers dos módulos
@@ -42,8 +43,11 @@ Financy-fc/
     │   │   ├── jwt.ts            # criação e validação de token
     │   │   └── ownership.ts      # existência e permissão por usuário
     │   └── errors/
-    │       └── UnauthorizedError.ts
-    ├── tests/                    # unitários, GraphQL in-process e smoke HTTP
+    │       ├── AppGraphQLError.ts
+    │       ├── UnauthorizedError.ts
+    │       ├── NoPermissionError.ts
+    │       └── NotFoundError.ts
+    ├── tests/                    # unitários, integração, GraphQL in-process e smoke HTTP
     └── .env.example
 ```
 
@@ -164,6 +168,29 @@ Testes em `tests/` cobrem service, resolvers, schema GraphQL, mutations in-proce
 ### Isolamento por usuário
 
 As checagens de existência e permissão de categorias e transações ficam centralizadas em `src/helpers/ownership.ts` e são reutilizadas pelos serviços de domínio. Os resolvers validam o JWT e delegam ao service; as mensagens de erro e o comportamento de bloqueio entre usuários permanecem os mesmos.
+
+### Tratamento de erros GraphQL
+
+Erros de domínio estendem `AppGraphQLError` (base sobre `GraphQLError`) e carregam `extensions.code`:
+
+- **`UnauthorizedError`** — autenticação, credenciais inválidas e validações de campo (`UNAUTHORIZED`)
+- **`NoPermissionError`** — recurso de outro usuário ou conflito como email duplicado (`FORBIDDEN`)
+- **`NotFoundError`** — recurso inexistente (`NOT_FOUND`)
+
+Os services e `ownership.ts` lançam essas classes em vez de `Error` genérico. O Apollo recebe `formatError` em `src/config/formatError/index.ts`, que preserva mensagem e código dos erros conhecidos e mascara falhas inesperadas como `Erro interno.` com `INTERNAL_SERVER_ERROR`, sem expor stacktrace.
+
+Exemplo de resposta de erro:
+
+```json
+{
+  "errors": [{
+    "message": "Sem permissão para realizar esta ação.",
+    "extensions": { "code": "FORBIDDEN" }
+  }]
+}
+```
+
+Testes em `tests/` cobrem as classes de erro, o normalizador, o pipeline completo com `formatError` (`graphql-errors.integration.test.ts`) e um smoke HTTP mínimo que prova o wiring real do servidor.
 
 ---
 

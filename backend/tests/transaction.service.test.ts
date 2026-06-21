@@ -8,6 +8,11 @@ import {
   TEST_PASSWORD,
   uniqueEmail,
 } from './helpers/auth-test-utils.js'
+import {
+  DOMAIN_ERROR_CODES,
+  DOMAIN_ERRORS,
+  expectDomainError,
+} from './helpers/domain-error-assertions.js'
 
 describe('transaction service', () => {
   const cleanup = createEmailCleanup()
@@ -55,12 +60,16 @@ describe('transaction service', () => {
 
     expect(found.title).toBe('Mercado')
 
-    await expect(transactionService.getTransaction(other, transaction.id)).rejects.toThrow(
-      'Sem permissão para realizar esta ação.',
+    await expectDomainError(
+      transactionService.getTransaction(other, transaction.id),
+      DOMAIN_ERRORS.noPermission,
+      DOMAIN_ERROR_CODES.FORBIDDEN,
     )
-    await expect(
+    await expectDomainError(
       transactionService.getTransaction(owner, '00000000-0000-0000-0000-000000000000'),
-    ).rejects.toThrow('Transação não encontrada.')
+      DOMAIN_ERRORS.transactionNotFound,
+      DOMAIN_ERROR_CODES.NOT_FOUND,
+    )
   })
 
   it('createTransaction valida campos obrigatórios e faz trim', async () => {
@@ -74,15 +83,21 @@ describe('transaction service', () => {
     expect(transaction.title).toBe('Internet')
     expect(transaction.type).toBe('despesa')
 
-    await expect(
+    await expectDomainError(
       transactionService.createTransaction(userId, { title: '', amount: 10, type: 'despesa' }),
-    ).rejects.toThrow('Título é obrigatório.')
-    await expect(
+      DOMAIN_ERRORS.titleRequired,
+      DOMAIN_ERROR_CODES.UNAUTHORIZED,
+    )
+    await expectDomainError(
       transactionService.createTransaction(userId, { title: 'X', amount: Number.NaN, type: 'despesa' }),
-    ).rejects.toThrow('Valor é obrigatório.')
-    await expect(
+      DOMAIN_ERRORS.amountRequired,
+      DOMAIN_ERROR_CODES.UNAUTHORIZED,
+    )
+    await expectDomainError(
       transactionService.createTransaction(userId, { title: 'X', amount: 10, type: '   ' }),
-    ).rejects.toThrow('Tipo é obrigatório.')
+      DOMAIN_ERRORS.typeRequired,
+      DOMAIN_ERROR_CODES.UNAUTHORIZED,
+    )
   })
 
   it('createTransaction aceita categoria própria e rejeita categoria alheia ou inexistente', async () => {
@@ -100,23 +115,26 @@ describe('transaction service', () => {
     })
     expect(withCategory.categoryId).toBe(category.id)
 
-    await expect(
+    await expectDomainError(
       transactionService.createTransaction(owner, {
         title: 'X',
         amount: 1,
         type: 'despesa',
         categoryId: otherCategory.id,
       }),
-    ).rejects.toThrow('Sem permissão para realizar esta ação.')
-
-    await expect(
+      DOMAIN_ERRORS.noPermission,
+      DOMAIN_ERROR_CODES.FORBIDDEN,
+    )
+    await expectDomainError(
       transactionService.createTransaction(owner, {
         title: 'X',
         amount: 1,
         type: 'despesa',
         categoryId: '00000000-0000-0000-0000-000000000000',
       }),
-    ).rejects.toThrow('Categoria não encontrada.')
+      DOMAIN_ERRORS.categoryNotFound,
+      DOMAIN_ERROR_CODES.NOT_FOUND,
+    )
   })
 
   it('updateTransaction atualiza a própria e rejeita erros', async () => {
@@ -136,12 +154,16 @@ describe('transaction service', () => {
     expect(updated.title).toBe('Streaming')
     expect(updated.amount).toBe(55)
 
-    await expect(
+    await expectDomainError(
       transactionService.updateTransaction(other, transaction.id, { title: 'X' }),
-    ).rejects.toThrow('Sem permissão para realizar esta ação.')
-    await expect(
+      DOMAIN_ERRORS.noPermission,
+      DOMAIN_ERROR_CODES.FORBIDDEN,
+    )
+    await expectDomainError(
       transactionService.updateTransaction(owner, transaction.id, { title: '   ' }),
-    ).rejects.toThrow('Título é obrigatório.')
+      DOMAIN_ERRORS.titleRequired,
+      DOMAIN_ERROR_CODES.UNAUTHORIZED,
+    )
   })
 
   it('deleteTransaction remove a própria e rejeita erros', async () => {
@@ -154,13 +176,17 @@ describe('transaction service', () => {
       type: 'despesa',
     })
 
-    await expect(transactionService.deleteTransaction(other, transaction.id)).rejects.toThrow(
-      'Sem permissão para realizar esta ação.',
+    await expectDomainError(
+      transactionService.deleteTransaction(other, transaction.id),
+      DOMAIN_ERRORS.noPermission,
+      DOMAIN_ERROR_CODES.FORBIDDEN,
     )
 
     expect(await transactionService.deleteTransaction(owner, transaction.id)).toBe(true)
-    await expect(transactionService.getTransaction(owner, transaction.id)).rejects.toThrow(
-      'Transação não encontrada.',
+    await expectDomainError(
+      transactionService.getTransaction(owner, transaction.id),
+      DOMAIN_ERRORS.transactionNotFound,
+      DOMAIN_ERROR_CODES.NOT_FOUND,
     )
   })
 })

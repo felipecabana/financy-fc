@@ -1,9 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { GraphqlContext } from '../src/config/context/index.js'
+import { NotFoundError } from '../src/errors/NotFoundError.js'
 import { UnauthorizedError } from '../src/errors/UnauthorizedError.js'
 import categoriesResolvers from '../src/graphql/modules/categories/resolvers.js'
 import categoryService from '../src/services/category.service.js'
+import {
+  DOMAIN_ERROR_CODES,
+  DOMAIN_ERRORS,
+  expectDomainError,
+} from './helpers/domain-error-assertions.js'
 
 const userId = 'user-123'
 const categoryId = 'category-456'
@@ -69,12 +75,14 @@ describe('categories resolvers', () => {
 
   it('propaga erro do service e não chama service sem auth', async () => {
     vi.spyOn(categoryService, 'getCategory').mockRejectedValue(
-      new Error('Categoria não encontrada.'),
+      new NotFoundError('Categoria'),
     )
 
-    await expect(
+    await expectDomainError(
       categoriesResolvers.Query.getCategory(null, { id: categoryId }, context, {} as never),
-    ).rejects.toThrow('Categoria não encontrada.')
+      DOMAIN_ERRORS.categoryNotFound,
+      DOMAIN_ERROR_CODES.NOT_FOUND,
+    )
 
     const unauthorizedContext: GraphqlContext = {
       validate: () => {
@@ -83,9 +91,11 @@ describe('categories resolvers', () => {
     }
     const listSpy = vi.spyOn(categoryService, 'listCategories')
 
-    await expect(
+    await expectDomainError(
       categoriesResolvers.Query.listCategories(null, {}, unauthorizedContext, {} as never),
-    ).rejects.toThrow(UnauthorizedError)
+      DOMAIN_ERRORS.unauthenticated,
+      DOMAIN_ERROR_CODES.UNAUTHORIZED,
+    )
     expect(listSpy).not.toHaveBeenCalled()
   })
 

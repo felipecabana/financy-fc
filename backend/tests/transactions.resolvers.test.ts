@@ -1,10 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { GraphqlContext } from '../src/config/context/index.js'
+import { NotFoundError } from '../src/errors/NotFoundError.js'
 import { UnauthorizedError } from '../src/errors/UnauthorizedError.js'
 import transactionsResolvers from '../src/graphql/modules/transactions/resolvers.js'
 import categoryService from '../src/services/category.service.js'
 import transactionService from '../src/services/transaction.service.js'
+import {
+  DOMAIN_ERROR_CODES,
+  DOMAIN_ERRORS,
+  expectDomainError,
+} from './helpers/domain-error-assertions.js'
 
 const userId = 'user-123'
 const transactionId = 'transaction-456'
@@ -97,17 +103,19 @@ describe('transactions resolvers', () => {
 
   it('propaga erro do service e não chama service sem auth', async () => {
     vi.spyOn(transactionService, 'getTransaction').mockRejectedValue(
-      new Error('Transação não encontrada.'),
+      new NotFoundError('Transação'),
     )
 
-    await expect(
+    await expectDomainError(
       transactionsResolvers.Query.getTransaction(
         null,
         { id: transactionId },
         context,
         {} as never,
       ),
-    ).rejects.toThrow('Transação não encontrada.')
+      DOMAIN_ERRORS.transactionNotFound,
+      DOMAIN_ERROR_CODES.NOT_FOUND,
+    )
 
     const unauthorizedContext: GraphqlContext = {
       validate: () => {
@@ -116,9 +124,11 @@ describe('transactions resolvers', () => {
     }
     const listSpy = vi.spyOn(transactionService, 'listTransactions')
 
-    await expect(
+    await expectDomainError(
       transactionsResolvers.Query.listTransactions(null, {}, unauthorizedContext, {} as never),
-    ).rejects.toThrow(UnauthorizedError)
+      DOMAIN_ERRORS.unauthenticated,
+      DOMAIN_ERROR_CODES.UNAUTHORIZED,
+    )
     expect(listSpy).not.toHaveBeenCalled()
   })
 

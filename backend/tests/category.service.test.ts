@@ -7,6 +7,11 @@ import {
   TEST_PASSWORD,
   uniqueEmail,
 } from './helpers/auth-test-utils.js'
+import {
+  DOMAIN_ERROR_CODES,
+  DOMAIN_ERRORS,
+  expectDomainError,
+} from './helpers/domain-error-assertions.js'
 
 describe('category service', () => {
   const cleanup = createEmailCleanup()
@@ -42,12 +47,16 @@ describe('category service', () => {
 
     expect(found.name).toBe('Moradia')
 
-    await expect(categoryService.getCategory(other, category.id)).rejects.toThrow(
-      'Sem permissão para realizar esta ação.',
+    await expectDomainError(
+      categoryService.getCategory(other, category.id),
+      DOMAIN_ERRORS.noPermission,
+      DOMAIN_ERROR_CODES.FORBIDDEN,
     )
-    await expect(
+    await expectDomainError(
       categoryService.getCategory(owner, '00000000-0000-0000-0000-000000000000'),
-    ).rejects.toThrow('Categoria não encontrada.')
+      DOMAIN_ERRORS.categoryNotFound,
+      DOMAIN_ERROR_CODES.NOT_FOUND,
+    )
   })
 
   it('createCategory valida nome e faz trim', async () => {
@@ -56,8 +65,10 @@ describe('category service', () => {
     const category = await categoryService.createCategory(userId, { name: '  Educação  ' })
     expect(category.name).toBe('Educação')
 
-    await expect(categoryService.createCategory(userId, { name: '' })).rejects.toThrow(
-      'Nome é obrigatório.',
+    await expectDomainError(
+      categoryService.createCategory(userId, { name: '' }),
+      DOMAIN_ERRORS.categoryNameRequired,
+      DOMAIN_ERROR_CODES.UNAUTHORIZED,
     )
   })
 
@@ -70,12 +81,16 @@ describe('category service', () => {
 
     expect(updated.name).toBe('Férias')
 
-    await expect(
+    await expectDomainError(
       categoryService.updateCategory(other, category.id, { name: 'X' }),
-    ).rejects.toThrow('Sem permissão para realizar esta ação.')
-    await expect(
+      DOMAIN_ERRORS.noPermission,
+      DOMAIN_ERROR_CODES.FORBIDDEN,
+    )
+    await expectDomainError(
       categoryService.updateCategory(owner, category.id, { name: '   ' }),
-    ).rejects.toThrow('Nome é obrigatório.')
+      DOMAIN_ERRORS.categoryNameRequired,
+      DOMAIN_ERROR_CODES.UNAUTHORIZED,
+    )
   })
 
   it('deleteCategory remove a própria e rejeita erros', async () => {
@@ -84,13 +99,17 @@ describe('category service', () => {
 
     const category = await categoryService.createCategory(owner, { name: 'Pets' })
 
-    await expect(categoryService.deleteCategory(other, category.id)).rejects.toThrow(
-      'Sem permissão para realizar esta ação.',
+    await expectDomainError(
+      categoryService.deleteCategory(other, category.id),
+      DOMAIN_ERRORS.noPermission,
+      DOMAIN_ERROR_CODES.FORBIDDEN,
     )
 
     expect(await categoryService.deleteCategory(owner, category.id)).toBe(true)
-    await expect(categoryService.getCategory(owner, category.id)).rejects.toThrow(
-      'Categoria não encontrada.',
+    await expectDomainError(
+      categoryService.getCategory(owner, category.id),
+      DOMAIN_ERRORS.categoryNotFound,
+      DOMAIN_ERROR_CODES.NOT_FOUND,
     )
   })
 })

@@ -5,7 +5,6 @@ import { fileURLToPath } from 'node:url'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
 import {
-  AUTH_ERRORS,
   createEmailCleanup,
   expectValidAuthPayload,
   LOGIN_MUTATION,
@@ -15,9 +14,14 @@ import {
   type LoginResponse,
   type SignupResponse,
 } from './helpers/auth-test-utils.js'
+import {
+  DOMAIN_ERROR_CODES,
+  DOMAIN_ERRORS,
+  expectGraphqlError,
+} from './helpers/domain-error-assertions.js'
 
 const backendRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
-const smokePort = 4098
+const smokePort = 4104
 const graphqlUrl = `http://127.0.0.1:${smokePort}/graphql`
 
 async function waitForServer(process: ChildProcess) {
@@ -125,7 +129,11 @@ describe('auth HTTP smoke', () => {
     })
 
     expect(result.data?.signup).toBeUndefined()
-    expect(result.errors?.[0]?.message).toBe(AUTH_ERRORS.duplicateEmail)
+    expectGraphqlError(
+      result.errors?.[0],
+      DOMAIN_ERRORS.duplicateEmail,
+      DOMAIN_ERROR_CODES.FORBIDDEN,
+    )
   })
 
   it('login rejeita credenciais inválidas sem revelar se o email existe', async () => {
@@ -146,7 +154,15 @@ describe('auth HTTP smoke', () => {
 
     expect(missingEmail.data?.login).toBeUndefined()
     expect(wrongPassword.data?.login).toBeUndefined()
-    expect(missingEmail.errors?.[0]?.message).toBe(AUTH_ERRORS.invalidCredentials)
-    expect(wrongPassword.errors?.[0]?.message).toBe(AUTH_ERRORS.invalidCredentials)
+    expectGraphqlError(
+      missingEmail.errors?.[0],
+      DOMAIN_ERRORS.invalidCredentials,
+      DOMAIN_ERROR_CODES.UNAUTHORIZED,
+    )
+    expectGraphqlError(
+      wrongPassword.errors?.[0],
+      DOMAIN_ERRORS.invalidCredentials,
+      DOMAIN_ERROR_CODES.UNAUTHORIZED,
+    )
   })
 })

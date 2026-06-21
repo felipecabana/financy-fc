@@ -1,12 +1,14 @@
 import { prismaClient } from '../../prisma/prisma.js'
+import { NoPermissionError } from '../errors/NoPermissionError.js'
+import { NotFoundError } from '../errors/NotFoundError.js'
 
 export async function findOwnedCategory(userId: string, id: string) {
   const category = await prismaClient.category.findUnique({ where: { id } })
   if (!category) {
-    throw new Error('Categoria não encontrada.')
+    throw new NotFoundError('Categoria')
   }
   if (category.userId !== userId) {
-    throw new Error('Sem permissão para realizar esta ação.')
+    throw new NoPermissionError()
   }
   return category
 }
@@ -14,10 +16,10 @@ export async function findOwnedCategory(userId: string, id: string) {
 export async function findOwnedTransaction(userId: string, id: string) {
   const transaction = await prismaClient.transaction.findUnique({ where: { id } })
   if (!transaction) {
-    throw new Error('Transação não encontrada.')
+    throw new NotFoundError('Transação')
   }
   if (transaction.userId !== userId) {
-    throw new Error('Sem permissão para realizar esta ação.')
+    throw new NoPermissionError()
   }
   return transaction
 }

@@ -19,6 +19,8 @@
     "check": "npm run validate && npm run build"
   },
   "dependencies": {
+    "@apollo/client": "^4.2.3",
+    "graphql": "^16.14.2",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   },

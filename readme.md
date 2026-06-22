@@ -2,220 +2,40 @@
 
 Projeto de finanças pessoais desenvolvido como entrega da pós-graduação **Tech Developer 360 Full Stack e IA**.
 
-A ideia é simples: cada pessoa controla suas categorias e transações, sem ver dados de outro usuário. Por enquanto só o **backend** existe neste repositório — uma API GraphQL em Node.js + TypeScript. O frontend React ainda não foi iniciado.
+A ideia é simples: cada pessoa controla suas categorias e transações, sem ver dados de outro usuário. O repositório está dividido em **`backend/`** (API GraphQL) e **`frontend/`** (SPA React). A API já expõe autenticação e CRUD completo; o frontend tem scaffold e tela placeholder — a integração com a API ainda será feita.
 
 ---
 
 ## Sobre o projeto
 
-O backend usa GraphQL no estilo schema-first (contrato em `.gql`, resolvers em TypeScript, serviços por cima do Prisma). Hoje o servidor sobe, valida variáveis de ambiente, tem o banco modelado, expõe **signup** e **login**, valida JWT nas rotas protegidas via contexto GraphQL, já oferece **CRUD de categorias e transações** escopado por usuário e **normaliza erros de domínio** na resposta GraphQL com códigos estáveis (`UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`).
+**Backend** — GraphQL schema-first com Prisma/SQLite: signup, login, JWT, CRUD de categorias e transações escopado por usuário, erros normalizados com códigos estáveis (`UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`).
 
-**O que está rodando hoje:** Node 20+, TypeScript, Express, Apollo Server, Prisma com SQLite, Zod para env, bcryptjs, jsonwebtoken, `@graphql-tools` (composição do schema), Vitest e ESLint.
+**Frontend** — React + TypeScript + Vite, consumindo o backend só via GraphQL. Por enquanto: estrutura de pastas, tooling e app placeholder.
 
 ---
 
-## Estrutura atual
+## Estrutura do repositório
 
 ```
 Financy-fc/
-└── backend/
-    ├── prisma/
-    │   ├── schema.prisma
-    │   ├── prisma.ts
-    │   ├── seed.ts              # dataset de dev
-    │   └── migrations/
-    ├── src/
-    │   ├── index.ts              # Express + Apollo
-    │   ├── config/
-    │   │   ├── env/              # validação do .env
-    │   │   ├── context/          # buildContext + validate() do JWT
-    │   │   └── formatError/      # normalização de erros GraphQL na resposta
-    │   ├── graphql/
-    │   │   ├── index.ts          # export do schema composto
-    │   │   ├── compose.ts        # merge de SDL e resolvers dos módulos
-    │   │   ├── schema/           # SDL compartilhado (_health)
-    │   │   └── modules/          # auth, users, categories e transactions com schema/resolvers
-    │   ├── services/
-    │   │   ├── auth.service.ts   # signup e login
-    │   │   ├── category.service.ts
-    │   │   └── transaction.service.ts
-    │   ├── helpers/
-    │   │   ├── password.ts       # hash e verificação de senha
-    │   │   ├── jwt.ts            # criação e validação de token
-    │   │   └── ownership.ts      # existência e permissão por usuário
-    │   └── errors/
-    │       ├── AppGraphQLError.ts
-    │       ├── UnauthorizedError.ts
-    │       ├── NoPermissionError.ts
-    │       └── NotFoundError.ts
-    ├── tests/                    # unitários, integração, GraphQL in-process e smoke HTTP
-    └── .env.example
+├── backend/     # API GraphQL — detalhes em backend/readme.md
+└── frontend/    # SPA React — detalhes em frontend/readme.md
 ```
 
 ---
 
-## Implementado até aqui
+## Documentação por módulo
 
-### Tooling do backend
-
-Workspace em `backend/` com TypeScript strict, módulos ESM e build em `dist/`. O build compila o TypeScript e copia os arquivos `.gql` para `dist/`, permitindo subir a API com `npm run start`. Tem scripts para desenvolvimento (`dev`, `start`), checagem de tipos, lint, testes e um `check` que roda tudo junto.
-
-### Variáveis de ambiente
-
-Copie `.env.example` para `.env` e preencha pelo menos o `JWT_SECRET`:
-
-```
-JWT_SECRET=          # obrigatório — gere um valor local
-DATABASE_URL="file:./dev.db"
-FRONTEND_URL=http://localhost:5173
-PORT=4000
-```
-
-O arquivo `src/config/env/index.ts` lê o `.env`, valida com Zod e **não deixa o servidor subir** se faltar algo. Os erros aparecem no console antes de bindar a porta.
-
-### Servidor GraphQL
-
-O `src/index.ts` monta Express + CORS (origem do `FRONTEND_URL`) + Apollo em `/graphql`, injetando `buildContext` em cada request. O Apollo recebe o objeto `graphql` exportado por `graphql/compose.ts`.
-
-A composição do schema é feita em `graphql/compose.ts`: os arquivos `.gql` de `schema/` e `modules/` são carregados com `loadFilesSync` e unidos com `mergeTypeDefs`; os resolvers dos módulos são combinados com `mergeResolvers`. Novos domínios entram criando pasta em `modules/` com `schema.gql` e `resolvers.ts` — o wiring em `compose.ts` importa os resolvers manualmente.
-
-O schema expõe a query de saúde, a query protegida `me`, as mutations de autenticação e o CRUD de categorias e transações:
-
-```graphql
-type Query {
-  _health: String!
-  me: User!
-  listCategories: [Category!]!
-  getCategory(id: String!): Category!
-  listTransactions: [Transaction!]!
-  getTransaction(id: String!): Transaction!
-}
-
-type Mutation {
-  signup(data: SignupInput!): AuthPayload!
-  login(data: LoginInput!): AuthPayload!
-  createCategory(data: CreateCategoryInput!): Category!
-  updateCategory(id: String!, data: UpdateCategoryInput!): Category!
-  deleteCategory(id: String!): Boolean!
-  createTransaction(data: CreateTransactionInput!): Transaction!
-  updateTransaction(id: String!, data: UpdateTransactionInput!): Transaction!
-  deleteTransaction(id: String!): Boolean!
-}
-```
-
-`signup` e `login` são públicos e retornam `token` + `user` (sem campo `password`). `me` e as operações de categoria e transação exigem `Authorization: Bearer <token>`.
-
-- `npm run dev` — nodemon + tsx, recarrega ao salvar
-- `npm run start` — roda o build compilado (`dist/`), com os `.gql` já copiados
-
-### Banco de dados
-
-SQLite via Prisma. Três tabelas na migration inicial:
-
-**User** — `id`, `email` (único), `password`, `createdAt`, `updatedAt`
-
-**Category** — `id`, `name`, `userId`, timestamps. Ligada ao usuário; se o user for apagado, as categorias somem junto (`onDelete: Cascade`).
-
-**Transaction** — `id`, `title`, `amount`, `type`, `userId`, `categoryId` (opcional), timestamps. Também pertence ao usuário com cascade. A categoria é opcional.
-
-O client fica num singleton em `prisma/prisma.ts` pra não abrir conexão nova a cada hot-reload no dev.
-
-Scripts do banco:
-
-- `npm run db:migrate` — cria/aplica migrations
-- `npm run db:generate` — gera o Prisma Client
-- `npm run db:push` — sincroniza schema sem migration
-- `npm run db:studio` — UI do Prisma
-- `npm run db:seed` — popula dataset de desenvolvimento (pode rodar mais de uma vez)
-- `npm run db:reset` — zera o banco e reaplica migrations (`prisma migrate reset`, sem seed)
-
-O arquivo `dev.db` é criado localmente em `backend/prisma/` e não vai pro git.
-
-### Dataset de desenvolvimento
-
-Para testes manuais e onboarding, use o fluxo abaixo a partir de `backend/`:
-
-```bash
-npm run db:reset   # zera o banco e reaplica migrations
-npm run db:seed    # popula usuário, categorias e transações de exemplo
-```
-
-Credenciais do seed:
-
-- **Email:** `usuario@financy.com`
-- **Senha:** `senha123456`
-
-Você pode rodar `npm run db:seed` várias vezes; os dados de exemplo não serão duplicados. O reset apaga todos os dados locais antes de reconstruir o schema — use apenas em desenvolvimento.
-
-### Helpers e serviço de autenticação
-
-Utilitários em `src/helpers/` usados pelo `auth.service.ts`:
-
-- **`password.ts`** — `hashPassword` e `verifyPassword` com bcryptjs (10 salt rounds)
-- **`jwt.ts`** — `createToken` e `verifyToken` com payload `{ id }`, expiração de 1 dia e secret do `JWT_SECRET`
-
-O `auth.service.ts` valida campos, garante email único, persiste senha hasheada e retorna o usuário público com JWT. Mensagens de erro em português (`Email já cadastrado.`, `Credenciais inválidas.`).
-
-Testes em `tests/` cobrem helpers, service, resolvers, schema GraphQL, mutations in-process e smoke HTTP.
-
-### Contexto de autenticação
-
-Cada request GraphQL recebe um contexto com `validate()`, montado em `src/config/context/index.ts`:
-
-- lê o header `Authorization: Bearer <token>`
-- valida o JWT com o helper existente
-- retorna o `userId` autenticado ou lança `UnauthorizedError` (`Usuário não autenticado.`)
-
-O resolver `me` em `graphql/modules/users/` usa esse fluxo para buscar o usuário atual no Prisma. `signup` e `login` continuam acessíveis sem token.
-
-### CRUD de categorias
-
-O módulo em `graphql/modules/categories/` delega para `category.service.ts`, que persiste via Prisma e filtra tudo pelo `userId` autenticado. Cada usuário só lista, consulta, cria, edita e remove as próprias categorias.
-
-Validações e erros em português, por exemplo: `Nome é obrigatório.`, `Categoria não encontrada.`, `Sem permissão para realizar esta ação.`
-
-Testes em `tests/` cobrem service, resolvers, schema GraphQL, mutations in-process e smoke HTTP de categorias.
-
-### CRUD de transações
-
-O módulo em `graphql/modules/transactions/` delega para `transaction.service.ts`, com o mesmo critério de isolamento por `userId`. Cada usuário só acessa as próprias transações; a categoria vinculada (`categoryId`) é opcional e precisa pertencer ao mesmo usuário.
-
-Validações e erros em português, por exemplo: `Título é obrigatório.`, `Transação não encontrada.`, `Sem permissão para realizar esta ação.`
-
-Testes em `tests/` cobrem service, resolvers, schema GraphQL, mutations in-process e smoke HTTP de transações.
-
-### Isolamento por usuário
-
-As checagens de existência e permissão de categorias e transações ficam centralizadas em `src/helpers/ownership.ts` e são reutilizadas pelos serviços de domínio. Os resolvers validam o JWT e delegam ao service; as mensagens de erro e o comportamento de bloqueio entre usuários permanecem os mesmos.
-
-### Tratamento de erros GraphQL
-
-Erros de domínio estendem `AppGraphQLError` (base sobre `GraphQLError`) e carregam `extensions.code`:
-
-- **`UnauthorizedError`** — autenticação, credenciais inválidas e validações de campo (`UNAUTHORIZED`)
-- **`NoPermissionError`** — recurso de outro usuário ou conflito como email duplicado (`FORBIDDEN`)
-- **`NotFoundError`** — recurso inexistente (`NOT_FOUND`)
-
-Os services e `ownership.ts` lançam essas classes em vez de `Error` genérico. O Apollo recebe `formatError` em `src/config/formatError/index.ts`, que preserva mensagem e código dos erros conhecidos e mascara falhas inesperadas como `Erro interno.` com `INTERNAL_SERVER_ERROR`, sem expor stacktrace.
-
-Exemplo de resposta de erro:
-
-```json
-{
-  "errors": [{
-    "message": "Sem permissão para realizar esta ação.",
-    "extensions": { "code": "FORBIDDEN" }
-  }]
-}
-```
-
-Testes em `tests/` cobrem as classes de erro, o normalizador, o pipeline completo com `formatError` (`graphql-errors.integration.test.ts`) e um smoke HTTP mínimo que prova o wiring real do servidor.
+- **[backend/readme.md](backend/readme.md)** — env, Prisma, schema GraphQL, auth, CRUD, seed, exemplos curl
+- **[frontend/readme.md](frontend/readme.md)** — scaffold, scripts, estrutura `src/`, rodar o dev server
 
 ---
 
 ## Rodando localmente
 
-Precisa de Node 20+ e npm.
+Precisa de Node e npm. O backend pede **20+**; o frontend pede **20.19+** ou **22.12+** (Vite 8).
+
+**API** (porta 4000):
 
 ```bash
 cd backend
@@ -224,58 +44,21 @@ cp .env.example .env
 # edite .env e defina JWT_SECRET
 npm run db:migrate
 npm run db:generate
-npm run db:seed    # opcional — dataset de dev para login imediato
+npm run db:seed    # opcional
 npm run dev
 ```
 
-GraphQL em `http://localhost:4000/graphql`.
-
-Teste rápido de saúde:
+**Frontend** (porta 5173):
 
 ```bash
-curl -X POST http://localhost:4000/graphql \
-  -H "Content-Type: application/json" \
-  -d '{"query":"{ _health }"}'
+cd frontend
+npm install
+npm run dev
 ```
 
-Deve voltar `{"data":{"_health":"ok"}}`.
+GraphQL em `http://localhost:4000/graphql`. App em `http://localhost:5173/`.
 
-Exemplo de signup:
-
-```bash
-curl -X POST http://localhost:4000/graphql \
-  -H "Content-Type: application/json" \
-  -d '{"query":"mutation { signup(data: { email: \"voce@example.com\", password: \"senha123\" }) { token user { id email } } }"}'
-```
-
-Exemplo de `me` (use o `token` retornado no signup/login):
-
-```bash
-curl -X POST http://localhost:4000/graphql \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer SEU_TOKEN_AQUI" \
-  -d '{"query":"{ me { id email } }"}'
-```
-
-Exemplo de `createCategory` (use o `token` retornado no signup/login):
-
-```bash
-curl -X POST http://localhost:4000/graphql \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer SEU_TOKEN_AQUI" \
-  -d '{"query":"mutation { createCategory(data: { name: \"Alimentação\" }) { id name } }"}'
-```
-
-Exemplo de `createTransaction`:
-
-```bash
-curl -X POST http://localhost:4000/graphql \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer SEU_TOKEN_AQUI" \
-  -d '{"query":"mutation { createTransaction(data: { title: \"Salário\", amount: 5000, type: \"receita\" }) { id title amount type } }"}'
-```
-
-Outros comandos úteis: `npm run check` (validação completa), `npm run test`, `npm run build`.
+Para setup detalhado, variáveis de ambiente e exemplos de requisição, consulte os readmes de cada pasta.
 
 ---
 

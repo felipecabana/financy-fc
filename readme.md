@@ -22,6 +22,7 @@ Financy-fc/
     ├── prisma/
     │   ├── schema.prisma
     │   ├── prisma.ts
+    │   ├── seed.ts              # dataset de dev
     │   └── migrations/
     ├── src/
     │   ├── index.ts              # Express + Apollo
@@ -125,8 +126,26 @@ Scripts do banco:
 - `npm run db:generate` — gera o Prisma Client
 - `npm run db:push` — sincroniza schema sem migration
 - `npm run db:studio` — UI do Prisma
+- `npm run db:seed` — popula dataset de desenvolvimento (pode rodar mais de uma vez)
+- `npm run db:reset` — zera o banco e reaplica migrations (`prisma migrate reset`, sem seed)
 
 O arquivo `dev.db` é criado localmente em `backend/prisma/` e não vai pro git.
+
+### Dataset de desenvolvimento
+
+Para testes manuais e onboarding, use o fluxo abaixo a partir de `backend/`:
+
+```bash
+npm run db:reset   # zera o banco e reaplica migrations
+npm run db:seed    # popula usuário, categorias e transações de exemplo
+```
+
+Credenciais do seed:
+
+- **Email:** `usuario@financy.com`
+- **Senha:** `senha123456`
+
+Você pode rodar `npm run db:seed` várias vezes; os dados de exemplo não serão duplicados. O reset apaga todos os dados locais antes de reconstruir o schema — use apenas em desenvolvimento.
 
 ### Helpers e serviço de autenticação
 
@@ -205,6 +224,7 @@ cp .env.example .env
 # edite .env e defina JWT_SECRET
 npm run db:migrate
 npm run db:generate
+npm run db:seed    # opcional — dataset de dev para login imediato
 npm run dev
 ```
 

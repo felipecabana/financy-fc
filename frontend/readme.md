@@ -1,6 +1,6 @@
 # Financy — Frontend
 
-SPA em **React + TypeScript + Vite** que consome a API GraphQL do backend. O **scaffold** e o **cliente Apollo** já estão configurados. Ainda não há rotas, telas de autenticação nem operações GraphQL de domínio.
+SPA em **React + TypeScript + Vite** que consome a API GraphQL do backend. O **scaffold**, o **cliente Apollo** e o **sistema visual base** já estão configurados. Ainda não há rotas, telas de autenticação nem operações GraphQL de domínio.
 
 ---
 
@@ -8,7 +8,7 @@ SPA em **React + TypeScript + Vite** que consome a API GraphQL do backend. O **s
 
 O frontend é um app standalone em `frontend/`, separado do backend. A comunicação com o servidor é feita via GraphQL (Apollo Client), conforme o padrão do repositório. O cliente está centralizado e conectado ao app; operações de domínio e telas virão depois.
 
-**O que está rodando hoje:** Node 20.19+ ou 22.12+, TypeScript strict, React 19, Vite 8, Apollo Client, Vitest e ESLint.
+**O que está rodando hoje:** Node 20.19+ ou 22.12+, TypeScript strict, React 19, Vite 8, Tailwind CSS, shadcn/ui, Apollo Client, sonner, lucide-react, Vitest e ESLint.
 
 ---
 
@@ -19,7 +19,11 @@ frontend/
 ├── src/
 │   ├── assets/                   # SVGs, logos estáticos
 │   ├── components/               # componentes reutilizáveis globais
-│   │   └── ui/                   # shadcn/ui (ainda vazio)
+│   │   ├── Header.tsx
+│   │   ├── Layout.tsx
+│   │   ├── Page.tsx
+│   │   ├── StyleGuidePreview.tsx # preview dos primitivos visuais
+│   │   └── ui/                   # shadcn/ui (button, input, label, dialog, card)
 │   ├── lib/
 │   │   ├── auth-token.ts         # getter de token (stub até auth)
 │   │   ├── graphql/
@@ -31,11 +35,12 @@ frontend/
 │   ├── stores/                   # Zustand (ainda vazio)
 │   ├── types/
 │   │   └── index.ts
-│   ├── App.tsx                   # placeholder
+│   ├── App.tsx                   # layout + preview do style guide
 │   ├── main.tsx                  # entry point + ApolloProvider
-│   ├── index.css                 # CSS global
+│   ├── index.css                 # tokens e estilos globais (Tailwind)
 │   └── vite-env.d.ts             # tipagem de VITE_BACKEND_URL
 ├── tests/                        # testes do scaffold e do cliente GraphQL
+├── components.json               # configuração shadcn/ui
 ├── .env.example                  # VITE_BACKEND_URL
 ├── index.html
 └── vite.config.ts                # Vite + Vitest + alias @/
@@ -62,11 +67,15 @@ Variável `VITE_BACKEND_URL` documentada em `.env.example` (fallback local: `htt
 
 Testes em `tests/apollo.test.ts` cobrem a URL do backend e o transporte HTTP do link GraphQL.
 
-### App placeholder
+### Sistema visual e componentes
 
-O `src/App.tsx` renderiza uma tela mínima (“Financy — frontend em construção”) só para validar o pipeline. Não há roteamento, estado global nem queries/mutations de domínio ainda.
+Tailwind CSS v4 com tokens de marca, escala de cinzas e cores de feedback em `src/index.css`. shadcn/ui inicializado com primitivos em `src/components/ui/` (button, input, label, dialog, card). Utilitário `cn()` em `src/lib/utils.ts` com `clsx` e `tailwind-merge`. Fonte Inter carregada via Google Fonts.
 
-Testes em `tests/scaffold.test.ts` cobrem o alias `@/`.
+Shell de layout em `Layout`, `Page` e `Header`, com notificações via `Toaster` (sonner). Ícones com `lucide-react`. O `App.tsx` exibe um preview dos componentes para validação visual; rotas e páginas de domínio virão depois.
+
+### App e testes do scaffold
+
+Testes em `tests/scaffold.test.ts` cobrem o alias `@/` e o merge de classes do `cn()`.
 
 ---
 

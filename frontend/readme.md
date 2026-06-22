@@ -1,12 +1,12 @@
 # Financy — Frontend
 
-SPA em **React + TypeScript + Vite** que consome a API GraphQL do backend. O **scaffold**, o **cliente Apollo**, o **sistema visual base**, o **estado de autenticação** e o **roteamento com guards** já estão configurados. Ainda não há formulários de login/signup nem operações GraphQL de domínio.
+SPA em **React + TypeScript + Vite** que consome a API GraphQL do backend. O **scaffold**, o **cliente Apollo**, o **sistema visual base**, o **estado de autenticação**, o **roteamento com guards** e as **páginas de login e cadastro** já estão configurados. Operações GraphQL de domínio (transações, contas etc.) ainda não foram implementadas.
 
 ---
 
 ## Sobre o projeto
 
-O frontend é um app standalone em `frontend/`, separado do backend. A comunicação com o servidor é feita via GraphQL (Apollo Client), conforme o padrão do repositório. O cliente está centralizado e conectado ao app; operações de domínio e telas virão depois.
+O frontend é um app standalone em `frontend/`, separado do backend. A comunicação com o servidor é feita via GraphQL (Apollo Client), conforme o padrão do repositório. O cliente está centralizado e conectado ao app; o fluxo de autenticação já está implementado, e operações de domínio virão depois.
 
 **O que está rodando hoje:** Node 20.19+ ou 22.12+, TypeScript strict, React 19, Vite 8, Tailwind CSS, shadcn/ui, Apollo Client, Zustand, react-router-dom, sonner, lucide-react, Vitest e ESLint.
 
@@ -21,18 +21,23 @@ frontend/
 │   ├── components/               # componentes reutilizáveis globais
 │   │   ├── Header.tsx
 │   │   ├── Layout.tsx
+│   │   ├── Logo.tsx
 │   │   ├── Page.tsx
 │   │   ├── StyleGuidePreview.tsx # preview dos primitivos visuais
 │   │   └── ui/                   # shadcn/ui (button, input, label, dialog, card)
 │   ├── lib/
 │   │   ├── graphql/
 │   │   │   ├── apollo.ts         # Apollo Client centralizado + authLink
-│   │   │   ├── mutations/        # operações GraphQL por domínio
+│   │   │   ├── mutations/
+│   │   │   │   └── Auth.ts       # login e signup
 │   │   │   └── queries/
 │   │   └── utils.ts              # utilitários globais (cn)
 │   ├── pages/
 │   │   ├── Auth/
-│   │   │   └── Login.tsx         # shell exibido em / quando deslogado
+│   │   │   ├── Login.tsx         # formulário de login em /
+│   │   │   ├── Signup.tsx        # formulário de cadastro em /signup
+│   │   │   ├── login-schema.ts   # validação Zod
+│   │   │   └── signup-schema.ts
 │   │   ├── Dashboard/
 │   │   │   └── index.tsx         # shell exibido em / quando logado
 │   │   └── Root/
@@ -45,7 +50,7 @@ frontend/
 │   ├── main.tsx                  # entry point + ApolloProvider + BrowserRouter
 │   ├── index.css                 # tokens e estilos globais (Tailwind)
 │   └── vite-env.d.ts             # tipagem de VITE_BACKEND_URL
-├── tests/                        # scaffold, Apollo, auth store e navegação
+├── tests/                        # scaffold, Apollo, auth store, navegação e formulários
 │   ├── helpers/
 │   └── setup/
 ├── components.json               # configuração shadcn/ui
@@ -85,9 +90,11 @@ Shell de layout em `Layout`, `Page` e `Header`, com notificações via `Toaster`
 
 Store `useAuthStore` em `src/stores/auth.ts` (Zustand + persist) guarda `token`, `user` e `isAuthenticated`, com reidratação do `localStorage` e `logout` que limpa o cache do Apollo. O `authLink` lê o token via `useAuthStore.getState().token`.
 
-A rota `/` renderiza `Login` ou `Dashboard` conforme a sessão (`RootPage`), sem redirect. `ProtectedRoute` em `App.tsx` redireciona rotas autenticadas para `/` quando não há sessão. Páginas de login e dashboard são shells mínimos; formulários e mutations virão depois.
+A rota `/` renderiza `Login` ou `Dashboard` conforme a sessão (`RootPage`), sem redirect. `ProtectedRoute` redireciona rotas autenticadas para `/` quando não há sessão; `GuestRoute` impede acesso a `/signup` quando já logado. A página de cadastro fica em `/signup`, com links entre login e signup.
 
-Testes em `tests/auth-store.test.ts` e `tests/auth-navigation.test.tsx` cobrem persistência, logout e alternância entre login e dashboard.
+Formulários de login e cadastro com validação Zod, mutations GraphQL (`login` e `signup`) e criação de sessão via `setSession` após sucesso. Erros de credenciais, e-mail duplicado e falha de conexão são exibidos no formulário.
+
+Testes em `tests/auth-store.test.ts`, `tests/auth-navigation.test.tsx` e `tests/auth-forms.test.tsx` cobrem persistência, guards, navegação entre páginas e fluxo dos formulários.
 
 ### App e testes do scaffold
 

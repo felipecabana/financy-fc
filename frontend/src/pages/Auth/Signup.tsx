@@ -1,6 +1,6 @@
 import { useMutation } from '@apollo/client/react'
 import { LinkError } from '@apollo/client/errors'
-import { Eye, EyeOff, Lock, Mail, UserRoundPlus } from 'lucide-react'
+import { Eye, EyeOff, Lock, LogIn, Mail, UserRound } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -10,29 +10,32 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { LOGIN_MUTATION, type LoginMutationData } from '@/lib/graphql/mutations'
+import { SIGNUP_MUTATION, type SignupMutationData } from '@/lib/graphql/mutations'
 import { useAuthStore } from '@/stores/auth'
 
-import { loginSchema } from './login-schema'
+import { signupSchema } from './signup-schema'
 
-export function Login() {
+export function Signup() {
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [rememberMe, setRememberMe] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
 
   const setSession = useAuthStore((state) => state.setSession)
 
-  const [login, { loading }] = useMutation<LoginMutationData>(LOGIN_MUTATION, {
-    onCompleted({ login }) {
-      setSession(login.token, login.user)
-      toast.success('Login realizado com sucesso')
+  const [signup, { loading }] = useMutation<SignupMutationData>(SIGNUP_MUTATION, {
+    onCompleted({ signup }) {
+      setSession(signup.token, signup.user)
+      toast.success('Conta criada com sucesso')
     },
     onError(error) {
-      const message = LinkError.is(error)
-        ? 'Falha de conexão. Tente novamente.'
-        : 'Credenciais inválidas.'
+      let message = 'Falha ao criar conta. Tente novamente.'
+      if (LinkError.is(error)) {
+        message = 'Falha de conexão. Tente novamente.'
+      } else if (error.message?.includes('Email já cadastrado')) {
+        message = 'Email já cadastrado.'
+      }
       setFormError(message)
       toast.error(message)
     },
@@ -42,13 +45,20 @@ export function Login() {
     e.preventDefault()
     setFormError(null)
 
-    const parsed = loginSchema.safeParse({ email, password })
+    const parsed = signupSchema.safeParse({ name, email, password })
     if (!parsed.success) {
       setFormError(parsed.error.issues[0]?.message ?? 'Dados inválidos.')
       return
     }
 
-    void login({ variables: { data: parsed.data } })
+    void signup({
+      variables: {
+        data: {
+          email: parsed.data.email,
+          password: parsed.data.password,
+        },
+      },
+    })
   }
 
   return (
@@ -56,21 +66,44 @@ export function Login() {
       <Logo />
       <Card className="w-full max-w-[448px] gap-8 rounded-xl border-gray-200 p-[33px] shadow-none">
         <div className="flex flex-col gap-1 text-center">
-          <h1 className="text-xl leading-7 font-bold text-gray-800">Fazer login</h1>
-          <p className="text-base leading-6 text-gray-600">Entre na sua conta para continuar</p>
+          <h1 className="text-xl leading-7 font-bold text-gray-800">Criar conta</h1>
+          <p className="text-base leading-6 text-gray-600">
+            Comece a controlar suas finanças ainda hoje
+          </p>
         </div>
 
         <form className="flex flex-col gap-6" onSubmit={handleSubmit} noValidate>
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="email">E-mail</Label>
+              <Label htmlFor="name">Nome completo</Label>
+              <div className="relative">
+                <UserRound
+                  className="pointer-events-none absolute top-1/2 left-[13px] size-4 -translate-y-1/2 text-gray-400"
+                  aria-hidden
+                />
+                <Input
+                  id="name"
+                  type="text"
+                  autoComplete="name"
+                  placeholder="Seu nome completo"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  disabled={loading}
+                  className="pl-10"
+                  aria-invalid={!!formError}
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="signup-email">E-mail</Label>
               <div className="relative">
                 <Mail
                   className="pointer-events-none absolute top-1/2 left-[13px] size-4 -translate-y-1/2 text-gray-400"
                   aria-hidden
                 />
                 <Input
-                  id="email"
+                  id="signup-email"
                   type="email"
                   autoComplete="email"
                   placeholder="mail@exemplo.com"
@@ -84,16 +117,16 @@ export function Login() {
             </div>
 
             <div className="flex flex-col gap-2">
-              <Label htmlFor="password">Senha</Label>
+              <Label htmlFor="signup-password">Senha</Label>
               <div className="relative">
                 <Lock
                   className="pointer-events-none absolute top-1/2 left-[13px] size-4 -translate-y-1/2 text-gray-400"
                   aria-hidden
                 />
                 <Input
-                  id="password"
+                  id="signup-password"
                   type={showPassword ? 'text' : 'password'}
-                  autoComplete="current-password"
+                  autoComplete="new-password"
                   placeholder="Digite sua senha"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -111,22 +144,7 @@ export function Login() {
                   {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                 </button>
               </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-sm text-gray-700">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  disabled={loading}
-                  className="size-4 rounded border border-gray-300 accent-brand-base"
-                />
-                Lembrar-me
-              </label>
-              <button type="button" className="text-sm font-medium text-brand-base hover:underline">
-                Recuperar senha
-              </button>
+              <p className="text-xs text-gray-500">A senha deve ter no mínimo 8 caracteres</p>
             </div>
           </div>
 
@@ -137,7 +155,7 @@ export function Login() {
           )}
 
           <Button type="submit" className="w-full" disabled={loading}>
-            Entrar
+            Cadastrar
           </Button>
 
           <div className="flex items-center gap-3">
@@ -147,11 +165,11 @@ export function Login() {
           </div>
 
           <div className="flex flex-col gap-4">
-            <p className="text-center text-sm text-gray-600">Ainda não tem uma conta?</p>
+            <p className="text-center text-sm text-gray-600">Já tem uma conta?</p>
             <Button asChild variant="outline" className="w-full" disabled={loading}>
-              <Link to="/signup">
-                <UserRoundPlus className="size-[18px]" />
-                Criar conta
+              <Link to="/">
+                <LogIn className="size-[18px]" />
+                Fazer login
               </Link>
             </Button>
           </div>

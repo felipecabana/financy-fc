@@ -8,6 +8,7 @@ type AuthState = {
   user: User | null
   token: string | null
   isAuthenticated: boolean
+  setSession: (token: string, user: User) => void
   logout: () => void
 }
 
@@ -17,6 +18,9 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       token: null,
       isAuthenticated: false,
+      setSession: (token, user) => {
+        set({ token, user, isAuthenticated: true })
+      },
       logout: () => {
         set({ user: null, token: null, isAuthenticated: false })
         void apolloClient.clearStore()

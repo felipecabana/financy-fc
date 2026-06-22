@@ -13,24 +13,16 @@ describe('useAuthStore', () => {
     expect(useAuthStore.getState().isAuthenticated).toBe(false)
   })
 
-  it('expoe token apos setState para uso do authLink', () => {
-    useAuthStore.setState({
-      token: 'jwt-test-token',
-      user: mockUser,
-      isAuthenticated: true,
-    })
+  it('setSession registra token, user e isAuthenticated', () => {
+    useAuthStore.getState().setSession('jwt-test-token', mockUser)
 
     expect(useAuthStore.getState().token).toBe('jwt-test-token')
+    expect(useAuthStore.getState().user).toEqual(mockUser)
     expect(useAuthStore.getState().isAuthenticated).toBe(true)
   })
 
-  it('logout limpa token e isAuthenticated', () => {
-    useAuthStore.setState({
-      token: 'jwt-test-token',
-      user: mockUser,
-      isAuthenticated: true,
-    })
-
+  it('logout limpa sessao criada por setSession', () => {
+    useAuthStore.getState().setSession('jwt-test-token', mockUser)
     useAuthStore.getState().logout()
 
     expect(useAuthStore.getState().token).toBeNull()

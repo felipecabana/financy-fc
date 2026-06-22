@@ -1,17 +1,21 @@
+import type { ReactNode } from 'react'
+import { Navigate, Route, Routes } from 'react-router-dom'
+
 import { Layout } from '@/components/Layout'
-import { Page } from '@/components/Page'
-import { StyleGuidePreview } from '@/components/StyleGuidePreview'
+import { RootPage } from '@/pages/Root'
+import { useAuthStore } from '@/stores/auth'
+
+export function ProtectedRoute({ children }: { children: ReactNode }) {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  return isAuthenticated ? <>{children}</> : <Navigate to="/" replace />
+}
 
 export function App() {
   return (
     <Layout>
-      <Page>
-        <h1 className="text-2xl font-semibold text-brand-base">Style guide</h1>
-        <p className="mt-2 text-gray-600">Validação visual dos primitivos Financy.</p>
-        <div className="mt-8">
-          <StyleGuidePreview />
-        </div>
-      </Page>
+      <Routes>
+        <Route path="/" element={<RootPage />} />
+      </Routes>
     </Layout>
   )
 }

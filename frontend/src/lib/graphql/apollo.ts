@@ -1,6 +1,6 @@
 import { ApolloClient, ApolloLink, HttpLink, InMemoryCache } from '@apollo/client'
 import { setContext } from '@apollo/client/link/context'
-import { getAuthToken } from '@/lib/auth-token'
+import { useAuthStore } from '@/stores/auth'
 
 export const backendGraphQLUrl =
   import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000/graphql'
@@ -10,7 +10,7 @@ const httpLink = new HttpLink({
 })
 
 const authLink = setContext((_, prevContext) => {
-  const token = getAuthToken()
+  const token = useAuthStore.getState().token
   return {
     headers: {
       ...prevContext.headers,

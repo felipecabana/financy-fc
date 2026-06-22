@@ -1,6 +1,6 @@
 # Financy — Frontend
 
-SPA em **React + TypeScript + Vite** que consome a API GraphQL do backend. O **scaffold**, o **cliente Apollo** e o **sistema visual base** já estão configurados. Ainda não há rotas, telas de autenticação nem operações GraphQL de domínio.
+SPA em **React + TypeScript + Vite** que consome a API GraphQL do backend. O **scaffold**, o **cliente Apollo**, o **sistema visual base**, o **estado de autenticação** e o **roteamento com guards** já estão configurados. Ainda não há formulários de login/signup nem operações GraphQL de domínio.
 
 ---
 
@@ -8,7 +8,7 @@ SPA em **React + TypeScript + Vite** que consome a API GraphQL do backend. O **s
 
 O frontend é um app standalone em `frontend/`, separado do backend. A comunicação com o servidor é feita via GraphQL (Apollo Client), conforme o padrão do repositório. O cliente está centralizado e conectado ao app; operações de domínio e telas virão depois.
 
-**O que está rodando hoje:** Node 20.19+ ou 22.12+, TypeScript strict, React 19, Vite 8, Tailwind CSS, shadcn/ui, Apollo Client, sonner, lucide-react, Vitest e ESLint.
+**O que está rodando hoje:** Node 20.19+ ou 22.12+, TypeScript strict, React 19, Vite 8, Tailwind CSS, shadcn/ui, Apollo Client, Zustand, react-router-dom, sonner, lucide-react, Vitest e ESLint.
 
 ---
 
@@ -25,21 +25,29 @@ frontend/
 │   │   ├── StyleGuidePreview.tsx # preview dos primitivos visuais
 │   │   └── ui/                   # shadcn/ui (button, input, label, dialog, card)
 │   ├── lib/
-│   │   ├── auth-token.ts         # getter de token (stub até auth)
 │   │   ├── graphql/
-│   │   │   ├── apollo.ts         # Apollo Client centralizado
+│   │   │   ├── apollo.ts         # Apollo Client centralizado + authLink
 │   │   │   ├── mutations/        # operações GraphQL por domínio
 │   │   │   └── queries/
 │   │   └── utils.ts              # utilitários globais (cn)
-│   ├── pages/                    # rotas — Auth, Dashboard, Transactions, Categories, Profile
-│   ├── stores/                   # Zustand (ainda vazio)
+│   ├── pages/
+│   │   ├── Auth/
+│   │   │   └── Login.tsx         # shell exibido em / quando deslogado
+│   │   ├── Dashboard/
+│   │   │   └── index.tsx         # shell exibido em / quando logado
+│   │   └── Root/
+│   │       └── index.tsx         # alterna Login e Dashboard conforme sessão
+│   ├── stores/
+│   │   └── auth.ts               # Zustand + persist
 │   ├── types/
 │   │   └── index.ts
-│   ├── App.tsx                   # layout + preview do style guide
-│   ├── main.tsx                  # entry point + ApolloProvider
+│   ├── App.tsx                   # Layout global, rotas e ProtectedRoute
+│   ├── main.tsx                  # entry point + ApolloProvider + BrowserRouter
 │   ├── index.css                 # tokens e estilos globais (Tailwind)
 │   └── vite-env.d.ts             # tipagem de VITE_BACKEND_URL
-├── tests/                        # testes do scaffold e do cliente GraphQL
+├── tests/                        # scaffold, Apollo, auth store e navegação
+│   ├── helpers/
+│   └── setup/
 ├── components.json               # configuração shadcn/ui
 ├── .env.example                  # VITE_BACKEND_URL
 ├── index.html
@@ -63,7 +71,7 @@ Workspace em `frontend/` com TypeScript strict, módulos ESM e build em `dist/`.
 
 ### Ambiente e cliente GraphQL
 
-Variável `VITE_BACKEND_URL` documentada em `.env.example` (fallback local: `http://localhost:4000/graphql`). O Apollo Client vive em `src/lib/graphql/apollo.ts` — `HttpLink`, `authLink` e cache únicos para todo o app. O token de autenticação passa por `getAuthToken()` em `src/lib/auth-token.ts` (por enquanto retorna `null`; o store de auth virá depois). O `main.tsx` envolve o app com `ApolloProvider`.
+Variável `VITE_BACKEND_URL` documentada em `.env.example` (fallback local: `http://localhost:4000/graphql`). O Apollo Client vive em `src/lib/graphql/apollo.ts` — `HttpLink`, `authLink` e cache únicos para todo o app. O token de autenticação é lido via `useAuthStore.getState().token` no `authLink` de `src/lib/graphql/apollo.ts`. O `main.tsx` envolve o app com `ApolloProvider`.
 
 Testes em `tests/apollo.test.ts` cobrem a URL do backend e o transporte HTTP do link GraphQL.
 
@@ -71,7 +79,15 @@ Testes em `tests/apollo.test.ts` cobrem a URL do backend e o transporte HTTP do 
 
 Tailwind CSS v4 com tokens de marca, escala de cinzas e cores de feedback em `src/index.css`. shadcn/ui inicializado com primitivos em `src/components/ui/` (button, input, label, dialog, card). Utilitário `cn()` em `src/lib/utils.ts` com `clsx` e `tailwind-merge`. Fonte Inter carregada via Google Fonts.
 
-Shell de layout em `Layout`, `Page` e `Header`, com notificações via `Toaster` (sonner). Ícones com `lucide-react`. O `App.tsx` exibe um preview dos componentes para validação visual; rotas e páginas de domínio virão depois.
+Shell de layout em `Layout`, `Page` e `Header`, com notificações via `Toaster` (sonner). Ícones com `lucide-react`.
+
+### Autenticação e roteamento
+
+Store `useAuthStore` em `src/stores/auth.ts` (Zustand + persist) guarda `token`, `user` e `isAuthenticated`, com reidratação do `localStorage` e `logout` que limpa o cache do Apollo. O `authLink` lê o token via `useAuthStore.getState().token`.
+
+A rota `/` renderiza `Login` ou `Dashboard` conforme a sessão (`RootPage`), sem redirect. `ProtectedRoute` em `App.tsx` redireciona rotas autenticadas para `/` quando não há sessão. Páginas de login e dashboard são shells mínimos; formulários e mutations virão depois.
+
+Testes em `tests/auth-store.test.ts` e `tests/auth-navigation.test.tsx` cobrem persistência, logout e alternância entre login e dashboard.
 
 ### App e testes do scaffold
 

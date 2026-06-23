@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 
 import { Page } from '@/components/Page'
 import type { Category, Transaction } from '@/types'
@@ -6,6 +6,7 @@ import type { Category, Transaction } from '@/types'
 import { CategoriesSection } from './components/CategoriesSection'
 import { CategoryList, type CategoryListRow } from './components/CategoryList'
 import { SummaryCards } from './components/SummaryCards'
+import { TransactionDialog } from './components/TransactionDialog'
 import { TransactionList } from './components/TransactionList'
 import { TransactionsSection } from './components/TransactionsSection'
 import { useDashboardData } from './useDashboardData'
@@ -25,7 +26,8 @@ function buildCategoryRows(categories: Category[], transactions: Transaction[]):
 }
 
 export function Dashboard() {
-  const { categories, transactions, loading, error } = useDashboardData()
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const { categories, transactions, loading, error, refetchTransactions } = useDashboardData()
 
   const categoryRows = useMemo(
     () => buildCategoryRows(categories, transactions),
@@ -43,7 +45,10 @@ export function Dashboard() {
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <SummaryCards loading={loading} />
-          <TransactionsSection loading={loading}>
+          <TransactionsSection
+            loading={loading}
+            onNewTransaction={() => setCreateDialogOpen(true)}
+          >
             <TransactionList transactions={transactions} />
           </TransactionsSection>
           <CategoriesSection loading={loading}>
@@ -51,6 +56,14 @@ export function Dashboard() {
           </CategoriesSection>
         </div>
       </Page>
+
+      <TransactionDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        mode="create"
+        categories={categories}
+        onSuccess={() => void refetchTransactions()}
+      />
     </div>
   )
 }

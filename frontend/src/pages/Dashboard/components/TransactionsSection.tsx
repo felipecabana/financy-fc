@@ -9,6 +9,7 @@ type TransactionsSectionProps = {
   children?: ReactNode
   className?: string
   loading: boolean
+  onNewTransaction?: () => void
 }
 
 function SectionSkeleton() {
@@ -27,7 +28,12 @@ function SectionSkeleton() {
   )
 }
 
-export function TransactionsSection({ children, className, loading }: TransactionsSectionProps) {
+export function TransactionsSection({
+  children,
+  className,
+  loading,
+  onNewTransaction,
+}: TransactionsSectionProps) {
   return (
     <Card className={cn('col-span-1 gap-0 overflow-hidden rounded-xl p-0 shadow-none lg:col-span-2', className)}>
       <div className="flex items-center justify-between border-b border-gray-200 px-6 py-5">
@@ -45,7 +51,12 @@ export function TransactionsSection({ children, className, loading }: Transactio
       </div>
 
       <div className="flex justify-center border-t border-gray-200 py-5">
-        <Button type="button" variant="link" className="h-auto gap-1 px-0 text-sm font-medium">
+        <Button
+          type="button"
+          variant="link"
+          className="h-auto gap-1 px-0 text-sm font-medium"
+          onClick={onNewTransaction}
+        >
           <Plus className="size-5" />
           Nova transação
         </Button>

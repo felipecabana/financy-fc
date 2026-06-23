@@ -8,6 +8,7 @@ export const LOGIN_MUTATION = gql`
       token
       user {
         id
+        name
         email
         createdAt
         updatedAt
@@ -22,6 +23,7 @@ export const SIGNUP_MUTATION = gql`
       token
       user {
         id
+        name
         email
         createdAt
         updatedAt

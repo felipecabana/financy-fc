@@ -109,7 +109,7 @@ type Mutation {
 
 SQLite via Prisma. Três tabelas na migration inicial:
 
-**User** — `id`, `email` (único), `password`, `createdAt`, `updatedAt`
+**User** — `id`, `name`, `email` (único), `password`, `createdAt`, `updatedAt`
 
 **Category** — `id`, `name`, `userId`, timestamps. Ligada ao usuário; se o user for apagado, as categorias somem junto (`onDelete: Cascade`).
 
@@ -151,7 +151,7 @@ Utilitários em `src/helpers/` usados pelo `auth.service.ts`:
 - **`password.ts`** — `hashPassword` e `verifyPassword` com bcryptjs (10 salt rounds)
 - **`jwt.ts`** — `createToken` e `verifyToken` com payload `{ id }`, expiração de 1 dia e secret do `JWT_SECRET`
 
-O `auth.service.ts` valida campos, garante email único, persiste senha hasheada e retorna o usuário público com JWT. Mensagens de erro em português (`Email já cadastrado.`, `Credenciais inválidas.`).
+O `auth.service.ts` valida campos (incluindo nome no cadastro), garante email único, persiste senha hasheada e retorna o usuário público com JWT. Mensagens de erro em português (`Nome, email e senha são obrigatórios.`, `Email já cadastrado.`, `Credenciais inválidas.`).
 
 Testes em `tests/` cobrem helpers, service, resolvers, schema GraphQL, mutations in-process e smoke HTTP.
 
@@ -242,7 +242,7 @@ Exemplo de signup:
 ```bash
 curl -X POST http://localhost:4000/graphql \
   -H "Content-Type: application/json" \
-  -d '{"query":"mutation { signup(data: { email: \"voce@example.com\", password: \"senha123\" }) { token user { id email } } }"}'
+  -d '{"query":"mutation { signup(data: { name: \"Seu Nome\", email: \"voce@example.com\", password: \"senha123\" }) { token user { id name email } } }"}'
 ```
 
 Exemplo de `me` (use o `token` retornado no signup/login):
@@ -251,7 +251,7 @@ Exemplo de `me` (use o `token` retornado no signup/login):
 curl -X POST http://localhost:4000/graphql \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer SEU_TOKEN_AQUI" \
-  -d '{"query":"{ me { id email } }"}'
+  -d '{"query":"{ me { id name email } }"}'
 ```
 
 Exemplo de `createCategory` (use o `token` retornado no signup/login):

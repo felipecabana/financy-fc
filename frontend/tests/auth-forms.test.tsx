@@ -96,7 +96,7 @@ describe('signup form', () => {
   })
 
   it('cria sessao apos cadastro bem-sucedido', async () => {
-    const newUser = { ...mockUser, email: 'novo@test.com' }
+    const newUser = { ...mockUser, email: 'novo@test.com', name: 'Fulano Silva' }
     renderSignup(mockAuthFetchSuccess('signup', newUser))
 
     fireEvent.change(screen.getByLabelText('Nome completo'), { target: { value: 'Fulano Silva' } })
@@ -106,7 +106,7 @@ describe('signup form', () => {
 
     await waitFor(() => {
       expect(useAuthStore.getState().isAuthenticated).toBe(true)
-      expect(useAuthStore.getState().user?.email).toBe(newUser.email)
+      expect(useAuthStore.getState().user).toEqual(newUser)
     })
   })
 

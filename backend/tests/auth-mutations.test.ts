@@ -11,7 +11,9 @@ import {
   expectValidAuthPayload,
   LOGIN_MUTATION,
   SIGNUP_MUTATION,
+  signupData,
   TEST_PASSWORD,
+  TEST_NAME,
   uniqueEmail,
   type AuthPayload,
 } from './helpers/auth-test-utils.js'
@@ -45,16 +47,18 @@ describe('auth mutations (GraphQL)', () => {
     const result = getApolloSingleResult(
       await server.executeOperation({
         query: SIGNUP_MUTATION,
-        variables: { data: { email, password: TEST_PASSWORD } },
+        variables: { data: signupData(email) },
       }),
     )
 
     expect(result.errors).toBeUndefined()
 
     const signup = result.data?.signup as AuthPayload
+    expect(signup.user.name).toBe(TEST_NAME)
     expectValidAuthPayload(signup, email)
 
     const stored = await prismaClient.user.findUnique({ where: { email } })
+    expect(stored?.name).toBe(TEST_NAME)
     expect(stored?.password).not.toBe(TEST_PASSWORD)
     await expect(verifyPassword(TEST_PASSWORD, stored!.password)).resolves.toBe(true)
   })
@@ -65,7 +69,7 @@ describe('auth mutations (GraphQL)', () => {
 
     await server.executeOperation({
       query: SIGNUP_MUTATION,
-      variables: { data: { email, password: TEST_PASSWORD } },
+      variables: { data: signupData(email) },
     })
 
     const result = getApolloSingleResult(
@@ -85,13 +89,13 @@ describe('auth mutations (GraphQL)', () => {
 
     await server.executeOperation({
       query: SIGNUP_MUTATION,
-      variables: { data: { email, password: TEST_PASSWORD } },
+      variables: { data: signupData(email) },
     })
 
     const result = getApolloSingleResult(
       await server.executeOperation({
         query: SIGNUP_MUTATION,
-        variables: { data: { email, password: 'other-password' } },
+        variables: { data: signupData(email, 'other-password') },
       }),
     )
 
@@ -109,7 +113,7 @@ describe('auth mutations (GraphQL)', () => {
 
     await server.executeOperation({
       query: SIGNUP_MUTATION,
-      variables: { data: { email, password: TEST_PASSWORD } },
+      variables: { data: signupData(email) },
     })
 
     const result = getApolloSingleResult(

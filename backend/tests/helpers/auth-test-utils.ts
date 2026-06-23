@@ -5,6 +5,7 @@ import { prismaClient } from '../../prisma/prisma.js'
 import { verifyToken } from '../../src/helpers/jwt.js'
 
 export const TEST_PASSWORD = 'secret123'
+export const TEST_NAME = 'Maria Silva'
 
 export const AUTH_ERRORS = {
   duplicateEmail: 'Email já cadastrado.',
@@ -12,11 +13,15 @@ export const AUTH_ERRORS = {
   requiredFields: 'Email e senha são obrigatórios.',
 } as const
 
+export function signupData(email: string, password = TEST_PASSWORD, name = TEST_NAME) {
+  return { name, email, password }
+}
+
 export const SIGNUP_MUTATION = `
   mutation Signup($data: SignupInput!) {
     signup(data: $data) {
       token
-      user { id email createdAt updatedAt }
+      user { id name email createdAt updatedAt }
     }
   }
 `
@@ -25,13 +30,14 @@ export const LOGIN_MUTATION = `
   mutation Login($data: LoginInput!) {
     login(data: $data) {
       token
-      user { id email createdAt updatedAt }
+      user { id name email createdAt updatedAt }
     }
   }
 `
 
 export type PublicUser = {
   id: string
+  name: string
   email: string
   createdAt: string
   updatedAt: string

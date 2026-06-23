@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { buildContext } from '../src/config/context/index.js'
 import authResolvers from '../src/graphql/modules/auth/resolvers.js'
 import usersResolvers from '../src/graphql/modules/users/resolvers.js'
-import { createEmailCleanup, TEST_PASSWORD, uniqueEmail } from './helpers/auth-test-utils.js'
+import { createEmailCleanup, signupData, TEST_NAME, TEST_PASSWORD, uniqueEmail } from './helpers/auth-test-utils.js'
 import {
   DOMAIN_ERROR_CODES,
   DOMAIN_ERRORS,
@@ -30,7 +30,7 @@ describe('users me resolver', () => {
 
     const signup = await authResolvers.Mutation.signup(
       null,
-      { data: { email, password: TEST_PASSWORD } },
+      { data: signupData(email) },
       {},
       {} as never,
     )
@@ -43,6 +43,7 @@ describe('users me resolver', () => {
 
     expect(user).toEqual({
       id: signup.user.id,
+      name: TEST_NAME,
       email,
       createdAt: expect.any(String),
       updatedAt: expect.any(String),

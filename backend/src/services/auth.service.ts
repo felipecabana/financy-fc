@@ -5,6 +5,7 @@ import { NoPermissionError } from '../errors/NoPermissionError.js'
 import { UnauthorizedError } from '../errors/UnauthorizedError.js'
 
 interface SignupInput {
+  name: string
   email: string
   password: string
 }
@@ -16,39 +17,47 @@ interface LoginInput {
 
 const toPublicUser = (user: {
   id: string
+  name: string
   email: string
   createdAt: Date
   updatedAt: Date
 }) => ({
   id: user.id,
+  name: user.name,
   email: user.email,
   createdAt: user.createdAt.toISOString(),
   updatedAt: user.updatedAt.toISOString(),
 })
 
 class AuthService {
-  private assertRequiredFields(data: SignupInput | LoginInput) {
+  private assertLoginFields(data: LoginInput) {
     if (!data.email?.trim() || !data.password?.trim()) {
       throw new UnauthorizedError('Email e senha são obrigatórios.')
     }
   }
 
+  private assertSignupFields(data: SignupInput) {
+    if (!data.name?.trim() || !data.email?.trim() || !data.password?.trim()) {
+      throw new UnauthorizedError('Nome, email e senha são obrigatórios.')
+    }
+  }
+
   async signup(data: SignupInput) {
-    this.assertRequiredFields(data)
+    this.assertSignupFields(data)
 
     const existing = await prismaClient.user.findUnique({ where: { email: data.email } })
     if (existing) throw new NoPermissionError('Email já cadastrado.')
 
     const password = await hashPassword(data.password)
     const user = await prismaClient.user.create({
-      data: { email: data.email, password },
+      data: { name: data.name.trim(), email: data.email, password },
     })
 
     return { token: createToken(user.id), user: toPublicUser(user) }
   }
 
   async login(data: LoginInput) {
-    this.assertRequiredFields(data)
+    this.assertLoginFields(data)
 
     const user = await prismaClient.user.findUnique({ where: { email: data.email } })
     if (!user) throw new UnauthorizedError('Credenciais inválidas.')

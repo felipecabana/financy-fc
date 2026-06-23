@@ -4,6 +4,7 @@ import { hashPassword } from '../src/helpers/password.js'
 import { prismaClient } from './prisma.js'
 
 const SEED_USER = {
+  name: 'Usuário Financy',
   email: 'usuario@financy.com',
   password: 'senha123456',
 }
@@ -59,6 +60,7 @@ async function main() {
     where: { email: SEED_USER.email },
     update: {},
     create: {
+      name: SEED_USER.name,
       email: SEED_USER.email,
       password: await hashPassword(SEED_USER.password),
     },

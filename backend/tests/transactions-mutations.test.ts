@@ -9,6 +9,7 @@ import {
   createEmailCleanup,
   getApolloSingleResult,
   SIGNUP_MUTATION,
+  signupData,
   TEST_PASSWORD,
   uniqueEmail,
   type AuthPayload,
@@ -88,7 +89,7 @@ describe('transaction CRUD (GraphQL)', () => {
     const result = getApolloSingleResult(
       await server.executeOperation({
         query: SIGNUP_MUTATION,
-        variables: { data: { email, password: TEST_PASSWORD } },
+        variables: { data: signupData(email) },
       }),
     )
 

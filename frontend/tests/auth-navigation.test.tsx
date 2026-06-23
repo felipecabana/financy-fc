@@ -52,7 +52,7 @@ describe('auth navigation', () => {
 
     renderRootPage()
 
-    expect(screen.getByRole('heading', { name: 'Dashboard' })).toBeTruthy()
+    expect(screen.getByText('Transações recentes')).toBeTruthy()
   })
 
   it('exibe Signup em /signup', () => {
@@ -86,7 +86,7 @@ describe('auth navigation', () => {
 
     renderApp('/signup')
 
-    expect(screen.getByRole('heading', { name: 'Dashboard' })).toBeTruthy()
+    expect(screen.getByText('Transações recentes')).toBeTruthy()
     expect(screen.queryByRole('heading', { name: 'Criar conta' })).toBeNull()
   })
 

@@ -5,6 +5,7 @@ import type { Transaction } from '@/types'
 
 type TransactionListProps = {
   transactions: Transaction[]
+  onDelete?: (id: string) => void
 }
 
 const RECENT_LIMIT = 5
@@ -58,7 +59,7 @@ function getRowStyle(transaction: Transaction, index: number) {
   return tagVariants[index % tagVariants.length]!
 }
 
-export function TransactionList({ transactions }: TransactionListProps) {
+export function TransactionList({ transactions, onDelete }: TransactionListProps) {
   const recent = [...transactions]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, RECENT_LIMIT)
@@ -107,6 +108,15 @@ export function TransactionList({ transactions }: TransactionListProps) {
             </div>
 
             <div className="flex w-40 shrink-0 items-center justify-end gap-2 px-6">
+              {onDelete && (
+                <button
+                  type="button"
+                  onClick={() => onDelete(transaction.id)}
+                  className="shrink-0 text-sm font-medium text-brand-base"
+                >
+                  Excluir
+                </button>
+              )}
               <span className="text-sm font-semibold text-gray-800">{formatAmount(transaction)}</span>
               {income ? (
                 <CircleArrowUp className="size-4 text-green-base" />

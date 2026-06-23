@@ -22,6 +22,12 @@ export const UPDATE_CATEGORY = gql`
   }
 `
 
+export const DELETE_CATEGORY = gql`
+  mutation DeleteCategory($id: String!) {
+    deleteCategory(id: $id)
+  }
+`
+
 export type CreateCategoryMutationData = {
   createCategory: Pick<Category, 'id' | 'name' | 'createdAt'>
 }
@@ -37,4 +43,12 @@ export type CreateCategoryMutationVariables = {
 export type UpdateCategoryMutationVariables = {
   id: string
   data: UpdateCategoryInput
+}
+
+export type DeleteCategoryMutationData = {
+  deleteCategory: boolean
+}
+
+export type DeleteCategoryMutationVariables = {
+  id: string
 }

@@ -28,6 +28,14 @@ export interface Category {
   updatedAt: string
 }
 
+export interface CreateCategoryInput {
+  name: string
+}
+
+export interface UpdateCategoryInput {
+  name?: string
+}
+
 export interface CreateTransactionInput {
   title: string
   amount: number

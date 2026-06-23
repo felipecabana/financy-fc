@@ -6,3 +6,11 @@ export {
   type SignupMutationData,
   type SignupMutationVariables,
 } from './Auth'
+export {
+  CREATE_TRANSACTION,
+  UPDATE_TRANSACTION,
+  type CreateTransactionMutationData,
+  type CreateTransactionMutationVariables,
+  type UpdateTransactionMutationData,
+  type UpdateTransactionMutationVariables,
+} from './Transaction'

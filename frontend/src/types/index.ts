@@ -19,3 +19,23 @@ export interface AuthPayload {
   token: string
   user: User
 }
+
+export interface Category {
+  id: string
+  name: string
+  userId: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Transaction {
+  id: string
+  title: string
+  amount: number
+  type: string
+  userId: string
+  categoryId?: string | null
+  category?: Category | null
+  createdAt: string
+  updatedAt: string
+}

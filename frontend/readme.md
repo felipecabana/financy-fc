@@ -1,12 +1,12 @@
 # Financy — Frontend
 
-SPA em **React + TypeScript + Vite** que consome a API GraphQL do backend. O **scaffold**, o **cliente Apollo**, o **sistema visual base**, o **estado de autenticação**, o **roteamento com guards** e as **páginas de login e cadastro** já estão configurados. Operações GraphQL de domínio (transações, contas etc.) ainda não foram implementadas.
+SPA em **React + TypeScript + Vite** que consome a API GraphQL do backend. O **scaffold**, o **cliente Apollo**, o **sistema visual base**, o **estado de autenticação**, o **roteamento com guards**, as **páginas de login e cadastro** e o **dashboard autenticado** com listagem de categorias e transações já estão configurados. Dialogs de criação/edição e demais páginas do app ainda não foram implementados.
 
 ---
 
 ## Sobre o projeto
 
-O frontend é um app standalone em `frontend/`, separado do backend. A comunicação com o servidor é feita via GraphQL (Apollo Client), conforme o padrão do repositório. O cliente está centralizado e conectado ao app; o fluxo de autenticação já está implementado, e operações de domínio virão depois.
+O frontend é um app standalone em `frontend/`, separado do backend. A comunicação com o servidor é feita via GraphQL (Apollo Client), conforme o padrão do repositório. O cliente está centralizado e conectado ao app; o fluxo de autenticação e a visualização de dados do dashboard (categorias e transações do usuário logado) já estão implementados.
 
 **O que está rodando hoje:** Node 20.19+ ou 22.12+, TypeScript strict, React 19, Vite 8, Tailwind CSS, shadcn/ui, Apollo Client, Zustand, react-router-dom, sonner, lucide-react, Vitest e ESLint.
 
@@ -31,6 +31,8 @@ frontend/
 │   │   │   ├── mutations/
 │   │   │   │   └── Auth.ts       # login e signup
 │   │   │   └── queries/
+│   │   │       ├── Category.ts   # listCategories
+│   │   │       └── Transaction.ts # listTransactions
 │   │   └── utils.ts              # utilitários globais (cn)
 │   ├── pages/
 │   │   ├── Auth/
@@ -39,7 +41,9 @@ frontend/
 │   │   │   ├── login-schema.ts   # validação Zod
 │   │   │   └── signup-schema.ts
 │   │   ├── Dashboard/
-│   │   │   └── index.tsx         # shell exibido em / quando logado
+│   │   │   ├── components/       # listas, cards de resumo e seções
+│   │   │   ├── useDashboardData.ts
+│   │   │   └── index.tsx         # exibido em / quando logado
 │   │   └── Root/
 │   │       └── index.tsx         # alterna Login e Dashboard conforme sessão
 │   ├── stores/
@@ -50,7 +54,7 @@ frontend/
 │   ├── main.tsx                  # entry point + ApolloProvider + BrowserRouter
 │   ├── index.css                 # tokens e estilos globais (Tailwind)
 │   └── vite-env.d.ts             # tipagem de VITE_BACKEND_URL
-├── tests/                        # scaffold, Apollo, auth store, navegação e formulários
+├── tests/                        # scaffold, Apollo, auth, dashboard
 │   ├── helpers/
 │   └── setup/
 ├── components.json               # configuração shadcn/ui
@@ -95,6 +99,14 @@ A rota `/` renderiza `Login` ou `Dashboard` conforme a sessão (`RootPage`), sem
 Formulários de login e cadastro com validação Zod, mutations GraphQL (`login` e `signup`) e criação de sessão via `setSession` após sucesso. Erros de credenciais, e-mail duplicado e falha de conexão são exibidos no formulário.
 
 Testes em `tests/auth-store.test.ts`, `tests/auth-navigation.test.tsx` e `tests/auth-forms.test.tsx` cobrem persistência, guards, navegação entre páginas e fluxo dos formulários.
+
+### Dashboard autenticado
+
+Tipos `Category` e `Transaction` em `src/types/index.ts`. Queries `LIST_CATEGORIES` e `LIST_TRANSACTIONS` em `src/lib/graphql/queries/`. O hook `useDashboardData` busca os dados via Apollo apenas com sessão ativa (`skip` quando deslogado) e expõe `refetch` para atualização futura das listas.
+
+A página `Dashboard` exibe cards de resumo, transações recentes e categorias do usuário logado, com estados de loading, erro e listas vazias. Componentes em `pages/Dashboard/components/` (`SummaryCards`, `TransactionsSection`, `TransactionList`, `CategoriesSection`, `CategoryList`).
+
+Testes em `tests/dashboard-data.test.tsx` cobrem skip sem sessão, carregamento mockado por usuário, refetch e empty states.
 
 ### App e testes do scaffold
 

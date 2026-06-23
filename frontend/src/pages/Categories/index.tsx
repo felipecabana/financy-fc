@@ -32,6 +32,7 @@ function buildCategoryRows(categories: Category[], transactions: Transaction[]):
     return {
       id: category.id,
       name: category.name,
+      description: category.description,
       icon: category.icon,
       color: category.color,
       itemCount: linked.length,

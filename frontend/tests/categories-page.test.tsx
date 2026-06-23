@@ -108,6 +108,16 @@ describe('Categories page', () => {
     expect(screen.getByLabelText('Título')).toHaveProperty('value', 'Alimentação')
   })
 
+  it('exibe descricao da categoria no card', async () => {
+    const { fetchMock } = createCategoriesPageFetch([mockCategoryA], [])
+    authenticate()
+    renderCategories(fetchMock)
+
+    await waitFor(() => {
+      expect(screen.getByText('Restaurantes, delivery e refeições')).toBeTruthy()
+    })
+  })
+
   it('exclui categoria apos confirmacao e refaz ambas listagens', async () => {
     const { fetchMock, operations } = createCategoriesPageFetch(
       [mockCategoryA],

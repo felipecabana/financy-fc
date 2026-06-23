@@ -1,31 +1,19 @@
 import { CircleArrowDown, CircleArrowUp, Receipt } from 'lucide-react'
 import { useSyncExternalStore } from 'react'
 
+import { incomeTagStyle, resolveCategoryTagStyle } from '@/lib/category-styles'
 import { cn } from '@/lib/utils'
 import type { Transaction } from '@/types'
 
 type TransactionListProps = {
   transactions: Transaction[]
   variant?: 'dashboard' | 'page'
+  emptyMessage?: string
   onEdit?: (id: string) => void
   onDelete?: (id: string) => void
 }
 
 const RECENT_LIMIT = 5
-
-const tagVariants = [
-  { bg: 'bg-blue-light', text: 'text-blue-dark', icon: 'bg-blue-light text-blue-dark' },
-  { bg: 'bg-purple-light', text: 'text-purple-dark', icon: 'bg-purple-light text-purple-dark' },
-  { bg: 'bg-orange-light', text: 'text-orange-dark', icon: 'bg-orange-light text-orange-dark' },
-  { bg: 'bg-pink-light', text: 'text-pink-dark', icon: 'bg-pink-light text-pink-dark' },
-  { bg: 'bg-yellow-light', text: 'text-yellow-dark', icon: 'bg-yellow-light text-yellow-dark' },
-] as const
-
-const incomeTag = {
-  bg: 'bg-green-light',
-  text: 'text-green-dark',
-  icon: 'bg-green-light text-green-dark',
-}
 
 const currencyFormatter = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
@@ -59,11 +47,15 @@ function getTypeLabel(type: string) {
 }
 
 function getRowStyle(transaction: Transaction, index: number) {
-  if (isIncome(transaction.type) && !transaction.category?.name) {
-    return incomeTag
+  if (transaction.category?.color) {
+    return resolveCategoryTagStyle(transaction.category.color)
   }
 
-  return tagVariants[index % tagVariants.length]!
+  if (isIncome(transaction.type) && !transaction.category?.name) {
+    return incomeTagStyle
+  }
+
+  return resolveCategoryTagStyle(null, index)
 }
 
 function sortTransactions(transactions: Transaction[]) {
@@ -89,10 +81,8 @@ function useIsLargeScreen() {
   return useSyncExternalStore(subscribeLargeScreen, isLargeScreen, () => false)
 }
 
-function EmptyState() {
-  return (
-    <p className="px-6 py-8 text-center text-sm text-gray-500">Nenhuma transação cadastrada.</p>
-  )
+function EmptyState({ message }: { message: string }) {
+  return <p className="px-6 py-8 text-center text-sm text-gray-500">{message}</p>
 }
 
 function PageTableHeader() {
@@ -308,6 +298,7 @@ function DashboardRow({
 export function TransactionList({
   transactions,
   variant = 'dashboard',
+  emptyMessage = 'Nenhuma transação cadastrada.',
   onEdit,
   onDelete,
 }: TransactionListProps) {
@@ -316,7 +307,7 @@ export function TransactionList({
   const items = variant === 'dashboard' ? sorted.slice(0, RECENT_LIMIT) : sorted
 
   if (items.length === 0) {
-    return <EmptyState />
+    return <EmptyState message={emptyMessage} />
   }
 
   if (variant === 'page') {

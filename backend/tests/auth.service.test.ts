@@ -45,6 +45,35 @@ describe('auth service', () => {
     await expect(verifyPassword(TEST_PASSWORD, stored!.password)).resolves.toBe(true)
   })
 
+  it('signup cria categorias padrao do figma para o novo usuario', async () => {
+    const email = uniqueEmail('auth-service-default-categories')
+    cleanup.track(email)
+
+    const result = await authService.signup({ name: TEST_NAME, email, password: TEST_PASSWORD })
+
+    const categories = await prismaClient.category.findMany({
+      where: { userId: result.user.id },
+      orderBy: { name: 'asc' },
+    })
+
+    expect(categories).toHaveLength(8)
+    expect(categories.map((category) => category.name)).toEqual([
+      'Alimentação',
+      'Entretenimento',
+      'Investimento',
+      'Mercado',
+      'Salário',
+      'Saúde',
+      'Transporte',
+      'Utilidades',
+    ])
+    expect(categories.find((category) => category.name === 'Transporte')).toMatchObject({
+      description: 'Gasolina, transporte público e viagens',
+      icon: 'car-front',
+      color: 'purple',
+    })
+  })
+
   it('signup rejeita email duplicado', async () => {
     const email = uniqueEmail('auth-service')
     cleanup.track(email)

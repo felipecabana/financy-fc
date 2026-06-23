@@ -1,4 +1,5 @@
 import { prismaClient } from '../../prisma/prisma.js'
+import { DEFAULT_CATEGORIES } from '../helpers/default-categories.js'
 import { createToken } from '../helpers/jwt.js'
 import { hashPassword, verifyPassword } from '../helpers/password.js'
 import { NoPermissionError } from '../errors/NoPermissionError.js'
@@ -49,8 +50,22 @@ class AuthService {
     if (existing) throw new NoPermissionError('Email já cadastrado.')
 
     const password = await hashPassword(data.password)
-    const user = await prismaClient.user.create({
-      data: { name: data.name.trim(), email: data.email, password },
+    const user = await prismaClient.$transaction(async (tx) => {
+      const created = await tx.user.create({
+        data: { name: data.name.trim(), email: data.email, password },
+      })
+
+      await tx.category.createMany({
+        data: DEFAULT_CATEGORIES.map((category) => ({
+          name: category.name,
+          description: category.description,
+          icon: category.icon,
+          color: category.color,
+          userId: created.id,
+        })),
+      })
+
+      return created
     })
 
     return { token: createToken(user.id), user: toPublicUser(user) }

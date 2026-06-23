@@ -12,19 +12,23 @@ import {
   PiggyBank,
   ReceiptText,
   ShoppingCart,
+  SquarePen,
   Tag,
   Ticket,
   ToolCase,
+  Trash2,
   Utensils,
   type LucideIcon,
 } from 'lucide-react'
 
 import { Card } from '@/components/ui/card'
+import { type CategoryTagStyle, resolveCategoryTagStyle } from '@/lib/category-styles'
 import { cn } from '@/lib/utils'
 
 export type CategoryListRow = {
   id: string
   name: string
+  description?: string | null
   icon?: string | null
   color?: string | null
   itemCount: number
@@ -38,30 +42,7 @@ type CategoryListProps = {
   onDelete?: (id: string) => void
 }
 
-type TagStyle = {
-  bg: string
-  text: string
-  icon: string
-}
-
-const tagVariants: TagStyle[] = [
-  { bg: 'bg-blue-light', text: 'text-blue-dark', icon: 'bg-blue-light text-blue-dark' },
-  { bg: 'bg-purple-light', text: 'text-purple-dark', icon: 'bg-purple-light text-purple-dark' },
-  { bg: 'bg-orange-light', text: 'text-orange-dark', icon: 'bg-orange-light text-orange-dark' },
-  { bg: 'bg-pink-light', text: 'text-pink-dark', icon: 'bg-pink-light text-pink-dark' },
-  { bg: 'bg-yellow-light', text: 'text-yellow-dark', icon: 'bg-yellow-light text-yellow-dark' },
-  { bg: 'bg-green-light', text: 'text-green-dark', icon: 'bg-green-light text-green-dark' },
-]
-
-const colorStyles: Record<string, TagStyle> = {
-  green: tagVariants[5]!,
-  blue: tagVariants[0]!,
-  purple: tagVariants[1]!,
-  orange: tagVariants[2]!,
-  pink: tagVariants[3]!,
-  yellow: tagVariants[4]!,
-  red: { bg: 'bg-red-light', text: 'text-red-dark', icon: 'bg-red-light text-red-dark' },
-}
+type TagStyle = CategoryTagStyle
 
 const iconComponents: Record<string, LucideIcon> = {
   'briefcase-business': BriefcaseBusiness,
@@ -92,10 +73,7 @@ function formatItemCount(count: number) {
 }
 
 function getTagStyle(row: CategoryListRow, index: number): TagStyle {
-  const fromColor = row.color ? colorStyles[row.color] : undefined
-  if (fromColor) return fromColor
-
-  return tagVariants[index % tagVariants.length]!
+  return resolveCategoryTagStyle(row.color, index)
 }
 
 function CategoryRowIcon({ icon, className }: { icon?: string | null; className?: string }) {
@@ -182,7 +160,7 @@ function PageCard({ row, index, onEdit, onDelete }: PageCardProps) {
   const tag = getTagStyle(row, index)
 
   return (
-    <Card className="gap-5 rounded-xl p-6 shadow-none">
+    <Card className="gap-5 rounded-xl p-[25px] shadow-none">
       <div className="flex items-start justify-between gap-3">
         <div
           className={cn(
@@ -197,42 +175,43 @@ function PageCard({ row, index, onEdit, onDelete }: PageCardProps) {
             <button
               type="button"
               onClick={() => onDelete(row.id)}
-              className="text-sm font-medium text-brand-base"
+              aria-label="Excluir"
+              className="flex size-8 items-center justify-center rounded-lg border border-gray-300 bg-white"
             >
-              Excluir
+              <Trash2 className="size-4 text-red-base" />
             </button>
           )}
           {onEdit && (
             <button
               type="button"
               onClick={() => onEdit(row.id)}
-              className="text-sm font-medium text-brand-base"
+              aria-label="Editar"
+              className="flex size-8 items-center justify-center rounded-lg border border-gray-300 bg-white"
             >
-              Editar
+              <SquarePen className="size-4 text-gray-700" />
             </button>
           )}
         </div>
       </div>
 
-      <p className="text-base font-semibold text-gray-800">{row.name}</p>
+      <div className="flex flex-col gap-1">
+        <p className="text-base font-semibold text-gray-800">{row.name}</p>
+        {row.description && (
+          <p className="line-clamp-2 text-sm text-gray-600">{row.description}</p>
+        )}
+      </div>
 
       <div className="flex items-center justify-between gap-3">
         <span
           className={cn(
-            'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium',
+            'rounded-full px-3 py-1 text-sm font-medium',
             tag.bg,
             tag.text,
           )}
         >
-          <CategoryRowIcon icon={row.icon} className="size-3.5 shrink-0" />
           {row.name}
         </span>
-        <div className="text-right">
-          <p className="text-sm text-gray-600">{formatItemCount(row.itemCount)}</p>
-          <p className="text-sm font-semibold text-gray-800">
-            {currencyFormatter.format(row.totalAmount)}
-          </p>
-        </div>
+        <span className="text-sm text-gray-600">{formatItemCount(row.itemCount)}</span>
       </div>
     </Card>
   )

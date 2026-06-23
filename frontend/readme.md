@@ -104,7 +104,7 @@ Store `useAuthStore` em `src/stores/auth.ts` (Zustand + persist) guarda só `use
 
 No boot do app, `SessionBootstrap` em `App.tsx` executa a query `me` para validar o cookie de sessão e reidratar o usuário após refresh. Enquanto isso, a UI fica em loading para evitar flash de tela errada.
 
-A rota `/` renderiza `Login` ou `Dashboard` conforme a sessão (`RootPage`), sem redirect. Rotas protegidas em `/transactions`, `/categories` e `/profile`; cadastro em `/signup` com `GuestRoute`. O `Header` exibe navbar com links para Dashboard, Transações e Categorias, além do avatar que leva ao perfil; em páginas de visitante, só o logo é mostrado.
+A rota `/` renderiza `Login` ou `Dashboard` conforme a sessão (`RootPage`), sem redirect. Rotas protegidas em `/transactions`, `/categories` e `/profile`; cadastro em `/signup` com `GuestRoute`. O `Header` exibe navbar com links para Dashboard, Transações e Categorias, além do avatar que leva ao perfil; em páginas de visitante (login e cadastro), o header não é renderizado.
 
 Formulários de login e cadastro com validação Zod, mutations GraphQL (`login` e `signup`) e criação de sessão via `setSession` após sucesso — a resposta traz só `user`; o JWT fica no cookie HttpOnly definido pelo backend. O cadastro envia o nome completo para a API. Erros de credenciais, e-mail duplicado e falha de conexão são exibidos no formulário.
 
@@ -114,11 +114,13 @@ Testes em `tests/auth-store.test.ts`, `tests/auth-navigation.test.tsx`, `tests/a
 
 Tipos `Category` e `Transaction` em `src/types/index.ts`. Queries `LIST_CATEGORIES` e `LIST_TRANSACTIONS` em `src/lib/graphql/queries/`. O hook `useDashboardData` busca os dados via Apollo apenas com sessão ativa (`skip` quando deslogado) e expõe `refetch` para atualização das listas.
 
-A página `Dashboard` exibe cards de resumo, transações recentes e categorias do usuário logado, com estados de loading, erro e listas vazias. Componentes em `pages/Dashboard/components/` (`SummaryCards`, `TransactionsSection`, `TransactionList`, `CategoriesSection`, `CategoryList`, `TransactionDialog`, `CategoryDialog`, `DeleteConfirmDialog`).
+A página `Dashboard` exibe cards de resumo com saldo total, receitas e despesas do mês (calculados a partir das transações), transações recentes e categorias do usuário logado, com estados de loading, erro e listas vazias. Componentes em `pages/Dashboard/components/` (`SummaryCards`, `TransactionsSection`, `TransactionList`, `CategoriesSection`, `CategoryList`, `TransactionDialog`, `CategoryDialog`, `DeleteConfirmDialog`).
 
 O botão **Nova transação** abre o `TransactionDialog` em modo criação. O formulário valida descrição, data, valor, tipo e categoria (opcional) com Zod e envia `createTransaction` ou `updateTransaction` via Apollo — incluindo a data da movimentação — com feedback por toast e atualização da lista após sucesso. A `TransactionList` ordena e exibe essa data no dashboard e na página de transações.
 
-O botão **Nova categoria** abre o `CategoryDialog` em modo criação; cada item da lista de categorias expõe **Editar** para abrir o mesmo modal em modo edição. O formulário valida título, ícone e cor (obrigatórios) e descrição (opcional) com Zod e envia `createCategory` ou `updateCategory` via Apollo, com feedback por toast e atualização da lista após sucesso. A `CategoryList` exibe o ícone e a cor de cada categoria, com fallback visual para registros legados sem esses campos.
+O botão **Nova categoria** abre o `CategoryDialog` em modo criação; cada item da lista de categorias expõe **Editar** para abrir o mesmo modal em modo edição. O formulário valida título, ícone e cor (obrigatórios) e descrição (opcional) com Zod e envia `createCategory` ou `updateCategory` via Apollo, com feedback por toast e atualização da lista após sucesso. A `CategoryList` exibe ícone, cor e descrição nas páginas dedicadas; no dashboard, mantém o layout compacto com totais por categoria.
+
+As etiquetas de categoria nas transações usam a cor vinculada à categoria (`category-styles.ts`), não a posição da linha na lista.
 
 Cada transação e categoria na lista expõe **Excluir**, que abre o `DeleteConfirmDialog` antes de remover o item. As mutations `deleteTransaction` e `deleteCategory` são chamadas via Apollo, com toast de sucesso ou erro e atualização das listas do dashboard após exclusão bem-sucedida.
 
@@ -128,7 +130,7 @@ Testes em `tests/dashboard-data.test.tsx` cobrem skip sem sessão, carregamento 
 
 ### Páginas dedicadas e perfil
 
-As rotas `/transactions` e `/categories` reutilizam `TransactionList`, `CategoryList`, os dialogs e `useDashboardData` para CRUD completo fora do dashboard. Em telas menores que 1024px, a lista de transações usa layout compacto em cards; em telas largas, mantém a tabela com todas as colunas.
+As rotas `/transactions` e `/categories` reutilizam `TransactionList`, `CategoryList`, os dialogs e `useDashboardData` para CRUD completo fora do dashboard. A página de transações inclui filtros por busca, tipo, categoria e período, com paginação local (10 itens por página). Em telas menores que 1024px, a lista de transações usa layout compacto em cards; em telas largas, mantém a tabela com todas as colunas.
 
 A rota `/profile` exibe nome, e-mail e iniciais da sessão, com campos somente leitura e botão **Sair da conta** que chama a mutation `logout` no servidor, limpa a sessão local e redireciona para o login.
 
@@ -136,7 +138,7 @@ Os modais `TransactionDialog` e `CategoryDialog` compartilham o cabeçalho visua
 
 As listas compactas do dashboard foram ajustadas para mobile, evitando sobreposição de colunas em cards estreitos.
 
-Testes em `tests/transactions-page.test.tsx`, `tests/categories-page.test.tsx` e `tests/profile-page.test.tsx` cobrem CRUD nas páginas dedicadas e logout no perfil.
+Testes em `tests/transactions-page.test.tsx`, `tests/categories-page.test.tsx`, `tests/transaction-filters.test.tsx`, `tests/category-styles.test.tsx`, `tests/compute-transaction-summary.test.ts` e `tests/profile-page.test.tsx` cobrem CRUD nas páginas dedicadas, filtros de transações, estilos de categoria e logout no perfil.
 
 ### App e testes do scaffold
 

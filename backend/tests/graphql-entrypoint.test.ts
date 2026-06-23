@@ -8,11 +8,7 @@ import { resolvers, typeDefs } from '../src/graphql/index.js'
 import {
   createEmailCleanup,
   getApolloSingleResult,
-  SIGNUP_MUTATION,
-  signupData,
-  TEST_PASSWORD,
-  uniqueEmail,
-  type AuthPayload,
+  signupForBearer,
 } from './helpers/auth-test-utils.js'
 
 const ME_QUERY = `query { me { id email } }`
@@ -45,22 +41,13 @@ describe('graphql entrypoint', () => {
     const health = getApolloSingleResult(await server.executeOperation({ query: '{ _health }' }))
     expect(health.data?._health).toBe('ok')
 
-    const email = uniqueEmail('entrypoint')
-    cleanup.track(email)
-
-    const signup = getApolloSingleResult(
-      await server.executeOperation({
-        query: SIGNUP_MUTATION,
-        variables: { data: signupData(email) },
-      }),
-    )
-    const auth = signup.data?.signup as AuthPayload
+    const auth = await signupForBearer(cleanup, 'entrypoint')
     const context = await buildContext({ req: mockRequest(`Bearer ${auth.token}`) })
 
     const me = getApolloSingleResult(
       await server.executeOperation({ query: ME_QUERY }, { contextValue: context }),
     )
-    expect(me.data?.me).toMatchObject({ id: auth.user.id, email })
+    expect(me.data?.me).toMatchObject({ id: auth.user.id, email: auth.email })
 
     const categories = getApolloSingleResult(
       await server.executeOperation({ query: LIST_CATEGORIES }, { contextValue: context }),

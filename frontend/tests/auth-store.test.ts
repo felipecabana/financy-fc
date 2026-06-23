@@ -9,44 +9,42 @@ afterEach(async () => {
 
 describe('useAuthStore', () => {
   it('inicia sem sessao ativa', () => {
-    expect(useAuthStore.getState().token).toBeNull()
+    expect(useAuthStore.getState().user).toBeNull()
     expect(useAuthStore.getState().isAuthenticated).toBe(false)
+    expect(useAuthStore.getState()).not.toHaveProperty('token')
   })
 
-  it('setSession registra token, user e isAuthenticated', () => {
-    useAuthStore.getState().setSession('jwt-test-token', mockUser)
+  it('setSession registra user e isAuthenticated', () => {
+    useAuthStore.getState().setSession(mockUser)
 
-    expect(useAuthStore.getState().token).toBe('jwt-test-token')
     expect(useAuthStore.getState().user).toEqual(mockUser)
     expect(useAuthStore.getState().isAuthenticated).toBe(true)
   })
 
   it('logout limpa sessao criada por setSession', () => {
-    useAuthStore.getState().setSession('jwt-test-token', mockUser)
+    useAuthStore.getState().setSession(mockUser)
     useAuthStore.getState().logout()
 
-    expect(useAuthStore.getState().token).toBeNull()
     expect(useAuthStore.getState().user).toBeNull()
     expect(useAuthStore.getState().isAuthenticated).toBe(false)
   })
 
-  it('reidrata sessao do localStorage apos reload simulado', async () => {
+  it('reidrata user do localStorage apos reload simulado', async () => {
     useAuthStore.setState({
-      token: 'jwt-persisted',
       user: mockUser,
       isAuthenticated: true,
     })
 
     await new Promise((resolve) => setTimeout(resolve, 0))
     const persistedSession = localStorage.getItem('financy-auth-storage')
-    expect(persistedSession).toContain('jwt-persisted')
+    expect(persistedSession).toContain(mockUser.email)
+    expect(persistedSession).not.toContain('token')
 
-    useAuthStore.setState({ user: null, token: null, isAuthenticated: false })
+    useAuthStore.setState({ user: null, isAuthenticated: false })
     localStorage.setItem('financy-auth-storage', persistedSession!)
 
     await useAuthStore.persist.rehydrate()
 
-    expect(useAuthStore.getState().token).toBe('jwt-persisted')
     expect(useAuthStore.getState().user).toEqual(mockUser)
     expect(useAuthStore.getState().isAuthenticated).toBe(true)
   })

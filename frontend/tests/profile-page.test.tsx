@@ -1,17 +1,24 @@
 // @vitest-environment jsdom
 
 import { ApolloProvider } from '@apollo/client/react'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 
 import { App } from '@/App'
 import { apolloClient } from '@/lib/graphql/apollo'
 import { useAuthStore } from '@/stores/auth'
 
-import { mockUser, resetAuthStore } from './helpers/auth-test-utils'
+import {
+  mockAppGraphQLFetch,
+  mockUser,
+  resetAuthStore,
+  stubAppGraphQLFetch,
+  waitForSessionBootstrap,
+} from './helpers/auth-test-utils'
 
-function renderProfileRoute() {
+function renderProfileRoute(me = mockUser) {
+  stubAppGraphQLFetch({ me })
   return render(
     <ApolloProvider client={apolloClient}>
       <MemoryRouter initialEntries={['/profile']}>
@@ -21,37 +28,45 @@ function renderProfileRoute() {
   )
 }
 
-function authenticate() {
-  useAuthStore.setState({
-    token: 'jwt-test-token',
-    user: mockUser,
-    isAuthenticated: true,
-  })
-}
-
 afterEach(async () => {
   cleanup()
+  vi.unstubAllGlobals()
   await resetAuthStore()
 })
 
 describe('Profile page', () => {
-  it('exibe nome, e-mail e iniciais da sessao', () => {
-    authenticate()
+  it('exibe nome, e-mail e iniciais da sessao', async () => {
     renderProfileRoute()
+    await waitForSessionBootstrap()
 
     expect(screen.getByRole('heading', { name: 'Maria Silva' })).toBeTruthy()
     expect(screen.getByLabelText('E-mail')).toHaveProperty('value', 'user1@financy.com')
     expect(screen.getByLabelText('Avatar').textContent).toBe('MS')
   })
 
-  it('faz logout e redireciona para login', () => {
-    authenticate()
-    renderProfileRoute()
+  it('faz logout via mutation e redireciona para login', async () => {
+    const fetchMock = mockAppGraphQLFetch({ me: mockUser })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(
+      <ApolloProvider client={apolloClient}>
+        <MemoryRouter initialEntries={['/profile']}>
+          <App />
+        </MemoryRouter>
+      </ApolloProvider>,
+    )
+    await waitForSessionBootstrap()
 
     fireEvent.click(screen.getByRole('button', { name: 'Sair da conta' }))
 
-    expect(useAuthStore.getState().isAuthenticated).toBe(false)
-    expect(useAuthStore.getState().token).toBeNull()
-    expect(screen.getByRole('heading', { name: 'Fazer login' })).toBeTruthy()
+    await waitFor(() => {
+      expect(useAuthStore.getState().isAuthenticated).toBe(false)
+      expect(useAuthStore.getState().user).toBeNull()
+      expect(screen.getByRole('heading', { name: 'Fazer login' })).toBeTruthy()
+    })
+
+    expect(fetchMock.mock.calls.some(([, init]) => String(init?.body).includes('logout'))).toBe(
+      true,
+    )
   })
 })

@@ -41,7 +41,8 @@ describe('login form', () => {
   })
 
   it('cria sessao apos login bem-sucedido', async () => {
-    renderLogin(mockAuthFetchSuccess('login'))
+    const fetchMock = mockAuthFetchSuccess('login')
+    renderLogin(fetchMock)
 
     fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: mockUser.email } })
     fireEvent.change(screen.getByLabelText('Senha'), { target: { value: 'senha123' } })
@@ -49,9 +50,12 @@ describe('login form', () => {
 
     await waitFor(() => {
       expect(useAuthStore.getState().isAuthenticated).toBe(true)
-      expect(useAuthStore.getState().token).toBe('jwt-test-token')
       expect(useAuthStore.getState().user).toEqual(mockUser)
     })
+
+    const [, init] = fetchMock.mock.calls[0] ?? []
+    expect(init?.credentials).toBe('include')
+    expect(init?.headers?.Authorization ?? init?.headers?.authorization).toBeUndefined()
   })
 
   it('exibe erro para credenciais invalidas', async () => {

@@ -18,6 +18,7 @@ const expectedMutationFields = [
   'deleteCategory',
   'deleteTransaction',
   'login',
+  'logout',
   'signup',
   'updateCategory',
   'updateTransaction',

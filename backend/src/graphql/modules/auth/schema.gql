@@ -10,11 +10,11 @@ input LoginInput {
 }
 
 type AuthPayload {
-  token: String!
   user: User!
 }
 
 type Mutation {
   signup(data: SignupInput!): AuthPayload!
   login(data: LoginInput!): AuthPayload!
+  logout: Boolean!
 }

@@ -1,21 +1,23 @@
 // Smoke HTTP: transações no servidor real (Express + Apollo).
-import { type ChildProcess, spawn } from 'node:child_process'
+import { type ChildProcess } from 'node:child_process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
 import {
   createEmailCleanup,
+  readAuthTokenFromSetCookie,
   SIGNUP_MUTATION,
   signupData,
-  TEST_PASSWORD,
   uniqueEmail,
+  type SignupResponse,
 } from './helpers/auth-test-utils.js'
 import {
   DOMAIN_ERROR_CODES,
   DOMAIN_ERRORS,
   expectGraphqlError,
 } from './helpers/domain-error-assertions.js'
+import { startSmokeServer, stopSmokeServer } from './helpers/smoke-server.js'
 
 const CREATE_TRANSACTION = `
   mutation CreateTransaction($data: CreateTransactionInput!) {
@@ -36,34 +38,7 @@ const DELETE_TRANSACTION = `mutation DeleteTransaction($id: String!) { deleteTra
 const GET_TRANSACTION = `query GetTransaction($id: String!) { getTransaction(id: $id) { id title } }`
 
 const backendRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
-const smokePort = 4106
-const graphqlUrl = `http://127.0.0.1:${smokePort}/graphql`
-
-async function waitForServer(process: ChildProcess) {
-  const deadline = Date.now() + 30_000
-
-  while (Date.now() < deadline) {
-    if (process.exitCode !== null) {
-      throw new Error('Servidor encerrou antes de ficar pronto')
-    }
-
-    try {
-      const response = await fetch(graphqlUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: '{ _health }' }),
-      })
-
-      if (response.ok) return
-    } catch {
-      // ainda subindo
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, 200))
-  }
-
-  throw new Error('Timeout aguardando servidor HTTP')
-}
+let graphqlUrl: string
 
 async function postGraphql(query: string, variables?: Record<string, unknown>, token?: string) {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
@@ -84,19 +59,14 @@ describe('transaction HTTP smoke', () => {
   const cleanup = createEmailCleanup()
 
   beforeAll(async () => {
-    serverProcess = spawn('npx', ['tsx', 'src/index.ts'], {
-      cwd: backendRoot,
-      env: { ...process.env, PORT: String(smokePort) },
-      stdio: ['ignore', 'pipe', 'pipe'],
-      shell: true,
-    })
-
-    await waitForServer(serverProcess)
+    const server = await startSmokeServer(backendRoot)
+    graphqlUrl = server.graphqlUrl
+    serverProcess = server.serverProcess
   }, 60_000)
 
   afterAll(async () => {
     await cleanup.reset()
-    if (!serverProcess.killed) serverProcess.kill()
+    stopSmokeServer(serverProcess)
   })
 
   afterEach(async () => {
@@ -107,11 +77,22 @@ describe('transaction HTTP smoke', () => {
     const email = uniqueEmail(prefix)
     cleanup.track(email)
 
-    const result = await postGraphql(SIGNUP_MUTATION, {
-      data: signupData(email),
+    const response = await fetch(graphqlUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query: SIGNUP_MUTATION,
+        variables: { data: signupData(email) },
+      }),
     })
 
-    return result.data.signup
+    expect(response.ok).toBe(true)
+
+    const result = (await response.json()) as SignupResponse
+    return {
+      user: result.data!.signup.user,
+      token: readAuthTokenFromSetCookie(response.headers),
+    }
   }
 
   it('faz CRUD de transação com token', async () => {

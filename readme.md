@@ -2,15 +2,15 @@
 
 Projeto de finanças pessoais desenvolvido como entrega da pós-graduação **Tech Developer 360 Full Stack e IA**.
 
-A ideia é simples: cada pessoa controla suas categorias e transações, sem ver dados de outro usuário. O repositório está dividido em **`backend/`** (API GraphQL) e **`frontend/`** (SPA React). A API já expõe autenticação e CRUD completo; o frontend tem scaffold e tela placeholder — a integração com a API ainda será feita.
+A ideia é simples: cada pessoa controla suas categorias e transações, sem ver dados de outro usuário. O repositório está dividido em **`backend/`** (API GraphQL) e **`frontend/`** (SPA React). A autenticação usa cookie HttpOnly de sessão — o JWT não fica no `localStorage` nem vai no header `Authorization` a partir do frontend.
 
 ---
 
 ## Sobre o projeto
 
-**Backend** — GraphQL schema-first com Prisma/SQLite: signup (com nome completo), login, JWT, CRUD de categorias e transações escopado por usuário, erros normalizados com códigos estáveis (`UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`).
+**Backend** — GraphQL schema-first com Prisma/SQLite: signup (com nome completo), login, cookie HttpOnly de sessão, CRUD de categorias e transações escopado por usuário, erros normalizados com códigos estáveis (`UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`).
 
-**Frontend** — React + TypeScript + Vite, consumindo o backend só via GraphQL. Por enquanto: estrutura de pastas, tooling e app placeholder.
+**Frontend** — React + TypeScript + Vite, consumindo o backend via GraphQL com `credentials: 'include'`. Login, cadastro, dashboard, transações, categorias e perfil integrados; sessão restaurada pela query `me` ao recarregar a página.
 
 ---
 

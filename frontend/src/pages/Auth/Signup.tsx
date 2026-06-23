@@ -26,7 +26,7 @@ export function Signup() {
 
   const [signup, { loading }] = useMutation<SignupMutationData>(SIGNUP_MUTATION, {
     onCompleted({ signup }) {
-      setSession(signup.token, signup.user)
+      setSession(signup.user)
       toast.success('Conta criada com sucesso')
     },
     onError(error) {

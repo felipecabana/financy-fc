@@ -53,4 +53,21 @@ describe('graphql client', () => {
     expect(result.data?.__typename).toBe('Query')
     expect(fetchMock).toHaveBeenCalledOnce()
   })
+
+  it('HttpLink com credentials include envia cookie na requisicao', async () => {
+    const fetchMock = mockGraphQLResponse()
+    const httpLink = new HttpLink({
+      uri: defaultBackendUrl,
+      fetch: fetchMock,
+      credentials: 'include',
+    })
+
+    await runLinkQuery(httpLink)
+
+    const [input, init] = fetchMock.mock.calls[0] ?? []
+    const credentials =
+      init?.credentials ?? (input instanceof Request ? input.credentials : undefined)
+
+    expect(credentials).toBe('include')
+  })
 })

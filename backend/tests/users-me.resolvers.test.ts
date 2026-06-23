@@ -1,5 +1,5 @@
-import type { Request } from 'express'
-import { afterEach, describe, expect, it } from 'vitest'
+import type { Request, Response } from 'express'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { buildContext } from '../src/config/context/index.js'
 import authResolvers from '../src/graphql/modules/auth/resolvers.js'
@@ -28,15 +28,19 @@ describe('users me resolver', () => {
     const email = uniqueEmail('me')
     cleanup.track(email)
 
+    const res = { cookie: vi.fn() } as unknown as Response
     const signup = await authResolvers.Mutation.signup(
       null,
       { data: signupData(email) },
-      {},
+      { res, validate: () => '' },
       {} as never,
     )
 
+    const token = res.cookie.mock.calls[0]?.[1] as string
+    expect(token).toEqual(expect.any(String))
+
     const context = await buildContext({
-      req: mockRequest(`Bearer ${signup.token}`),
+      req: mockRequest(`Bearer ${token}`),
     })
 
     const user = await usersResolvers.Query.me(null, {}, context, {} as never)

@@ -39,7 +39,6 @@ describe('useDashboardData', () => {
     const fetchMock = mockDashboardFetch([mockCategoryA], [mockTransactionUser1])
 
     useAuthStore.setState({
-      token: 'jwt-test-token',
       user: mockUser,
       isAuthenticated: true,
     })
@@ -63,7 +62,6 @@ describe('useDashboardData', () => {
     const fetchMock = mockDashboardFetch([mockCategoryA], [mockTransactionUser1])
 
     useAuthStore.setState({
-      token: 'jwt-test-token',
       user: mockUser,
       isAuthenticated: true,
     })
@@ -86,7 +84,6 @@ describe('Dashboard data view', () => {
     const fetchMock = mockDashboardFetch([mockCategoryA], [mockTransactionUser1])
 
     useAuthStore.setState({
-      token: 'jwt-test-token',
       user: mockUser,
       isAuthenticated: true,
     })
@@ -104,7 +101,6 @@ describe('Dashboard data view', () => {
     const fetchMock = mockDashboardFetch([mockCategoryB], [mockTransactionUser2])
 
     useAuthStore.setState({
-      token: 'jwt-test-token',
       user: mockUser,
       isAuthenticated: true,
     })
@@ -122,7 +118,6 @@ describe('Dashboard data view', () => {
     const fetchMock = mockDashboardFetch([], [])
 
     useAuthStore.setState({
-      token: 'jwt-test-token',
       user: mockUser,
       isAuthenticated: true,
     })

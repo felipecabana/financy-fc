@@ -9,9 +9,9 @@ type LayoutProps = {
 
 export function Layout({ children }: LayoutProps) {
   return (
-    <div className="flex min-h-svh flex-col bg-background">
+    <div className="flex min-h-svh flex-col">
       <Header />
-      <main className="flex-1">{children}</main>
+      <main className="flex flex-1 flex-col bg-gray-100">{children}</main>
       <Toaster richColors position="top-right" />
     </div>
   )

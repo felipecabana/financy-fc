@@ -1,9 +1,12 @@
 import type { ReactElement, ReactNode } from 'react'
 import { ApolloProvider } from '@apollo/client/react'
 import { render } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { vi } from 'vitest'
 
+import { Categories } from '@/pages/Categories'
 import { Dashboard } from '@/pages/Dashboard'
+import { Transactions } from '@/pages/Transactions'
 import type { Category, Transaction } from '@/types'
 
 import { createMockApolloClient } from './auth-test-utils'
@@ -75,17 +78,33 @@ export function mockDashboardFetch(categories: Category[], transactions: Transac
 export function renderWithDashboardApollo(ui: ReactElement, fetchImpl: typeof fetch) {
   const client = createMockApolloClient(fetchImpl)
 
-  return render(<ApolloProvider client={client}>{ui}</ApolloProvider>)
+  return render(
+    <MemoryRouter>
+      <ApolloProvider client={client}>{ui}</ApolloProvider>
+    </MemoryRouter>,
+  )
 }
 
 export function renderDashboard(fetchImpl: typeof fetch) {
   return renderWithDashboardApollo(<Dashboard />, fetchImpl)
 }
 
+export function renderTransactions(fetchImpl: typeof fetch) {
+  return renderWithDashboardApollo(<Transactions />, fetchImpl)
+}
+
+export function renderCategories(fetchImpl: typeof fetch) {
+  return renderWithDashboardApollo(<Categories />, fetchImpl)
+}
+
 export function createDashboardWrapper(fetchImpl: typeof fetch) {
   const client = createMockApolloClient(fetchImpl)
 
   return function DashboardWrapper({ children }: { children: ReactNode }) {
-    return <ApolloProvider client={client}>{children}</ApolloProvider>
+    return (
+      <MemoryRouter>
+        <ApolloProvider client={client}>{children}</ApolloProvider>
+      </MemoryRouter>
+    )
   }
 }

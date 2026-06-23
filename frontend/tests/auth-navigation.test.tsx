@@ -136,4 +136,114 @@ describe('auth navigation', () => {
 
     expect(screen.getByRole('heading', { name: 'Dashboard' })).toBeTruthy()
   })
+
+  it('nao exibe links da navbar sem sessao em /', () => {
+    renderApp('/')
+
+    expect(screen.queryByRole('navigation', { name: 'Principal' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Transações' })).toBeNull()
+  })
+
+  it('nao exibe links da navbar em /signup', () => {
+    renderApp('/signup')
+
+    expect(screen.queryByRole('navigation', { name: 'Principal' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Categorias' })).toBeNull()
+  })
+
+  it('exibe navbar autenticada no Dashboard', () => {
+    useAuthStore.setState({
+      token: 'jwt-test-token',
+      user: mockUser,
+      isAuthenticated: true,
+    })
+
+    renderApp('/')
+
+    expect(screen.getByRole('navigation', { name: 'Principal' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Dashboard' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Transações' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Categorias' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Perfil' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Perfil' }).textContent).toBe('MS')
+  })
+
+  it('navega para /transactions pelo link da navbar', () => {
+    useAuthStore.setState({
+      token: 'jwt-test-token',
+      user: mockUser,
+      isAuthenticated: true,
+    })
+
+    renderApp('/')
+
+    fireEvent.click(screen.getByRole('link', { name: 'Transações' }))
+
+    expect(screen.getByRole('heading', { name: 'Transações' })).toBeTruthy()
+  })
+
+  it.each(['/transactions', '/categories', '/profile'])(
+    'ProtectedRoute redireciona %s para / sem sessao',
+    (path) => {
+      renderApp(path)
+
+      expect(screen.getByRole('heading', { name: 'Fazer login' })).toBeTruthy()
+    },
+  )
+
+  it('navega para /transactions pelo link Ver todas no Dashboard', () => {
+    useAuthStore.setState({
+      token: 'jwt-test-token',
+      user: mockUser,
+      isAuthenticated: true,
+    })
+
+    renderApp('/')
+
+    fireEvent.click(screen.getByRole('link', { name: 'Ver todas' }))
+
+    expect(screen.getByRole('heading', { name: 'Transações' })).toBeTruthy()
+  })
+
+  it('navega para /categories pelo link Gerenciar no Dashboard', () => {
+    useAuthStore.setState({
+      token: 'jwt-test-token',
+      user: mockUser,
+      isAuthenticated: true,
+    })
+
+    renderApp('/')
+
+    fireEvent.click(screen.getByRole('link', { name: 'Gerenciar' }))
+
+    expect(screen.getByRole('heading', { name: 'Categorias' })).toBeTruthy()
+  })
+
+  it('navega para /categories pelo link da navbar', () => {
+    useAuthStore.setState({
+      token: 'jwt-test-token',
+      user: mockUser,
+      isAuthenticated: true,
+    })
+
+    renderApp('/')
+
+    fireEvent.click(screen.getByRole('link', { name: 'Categorias' }))
+
+    expect(screen.getByRole('heading', { name: 'Categorias' })).toBeTruthy()
+  })
+
+  it('navega para /profile pelo link do avatar', () => {
+    useAuthStore.setState({
+      token: 'jwt-test-token',
+      user: mockUser,
+      isAuthenticated: true,
+    })
+
+    renderApp('/')
+
+    fireEvent.click(screen.getByRole('link', { name: 'Perfil' }))
+
+    expect(screen.getByRole('heading', { name: 'Maria Silva' })).toBeTruthy()
+  })
 })

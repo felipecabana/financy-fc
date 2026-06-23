@@ -1,5 +1,6 @@
 import { ChevronRight, Plus } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -38,10 +39,13 @@ export function CategoriesSection({
     <Card className={cn('col-span-1 gap-0 overflow-hidden rounded-xl p-0 shadow-none', className)}>
       <div className="flex items-center justify-between border-b border-gray-200 px-6 py-5">
         <span className="text-xs font-medium tracking-wide text-gray-500 uppercase">Categorias</span>
-        <button type="button" className="flex items-center gap-1 text-sm font-medium text-brand-base">
+        <Link
+          to="/categories"
+          className="flex items-center gap-1 text-sm font-medium text-brand-base hover:underline"
+        >
           Gerenciar
-          <ChevronRight className="size-5" />
-        </button>
+          <ChevronRight className="size-5" aria-hidden />
+        </Link>
       </div>
 
       <div className="min-h-[200px]">

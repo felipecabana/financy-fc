@@ -99,6 +99,14 @@ describe('TransactionDialog', () => {
     expect(screen.getByRole('alert').textContent).toBe('Preencha a descrição.')
   })
 
+  it('fecha ao clicar no botao Fechar', () => {
+    const { onOpenChange } = renderDialog(vi.fn())
+
+    fireEvent.click(screen.getByRole('button', { name: 'Fechar' }))
+
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+  })
+
   it('chama onSuccess apos criar transacao com sucesso', async () => {
     const fetchMock = mockCreateTransactionFetch()
     const { onOpenChange, onSuccess } = renderDialog(fetchMock)

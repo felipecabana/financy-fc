@@ -6,6 +6,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { vi } from 'vitest'
 
 import { Login } from '@/pages/Auth/Login'
+import { Profile } from '@/pages/Profile'
 import { Signup } from '@/pages/Auth/Signup'
 import type { User } from '@/types'
 
@@ -77,6 +78,10 @@ export function renderLogin(fetchImpl: typeof fetch) {
 
 export function renderSignup(fetchImpl: typeof fetch) {
   return renderWithProviders(<Signup />, fetchImpl)
+}
+
+export function renderProfile(fetchImpl: typeof fetch) {
+  return renderWithProviders(<Profile />, fetchImpl)
 }
 
 export function renderLoginWithNetworkError() {

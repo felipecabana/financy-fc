@@ -1,5 +1,6 @@
 import { ChevronRight, Plus } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -40,10 +41,13 @@ export function TransactionsSection({
         <span className="text-xs font-medium tracking-wide text-gray-500 uppercase">
           Transações recentes
         </span>
-        <button type="button" className="flex items-center gap-1 text-sm font-medium text-brand-base">
+        <Link
+          to="/transactions"
+          className="flex items-center gap-1 text-sm font-medium text-brand-base hover:underline"
+        >
           Ver todas
-          <ChevronRight className="size-5" />
-        </button>
+          <ChevronRight className="size-5" aria-hidden />
+        </Link>
       </div>
 
       <div className="min-h-[200px]">

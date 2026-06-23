@@ -94,8 +94,18 @@
     @apply border-border outline-ring/50;
   }
 
+  html,
+  body,
+  #root {
+    min-height: 100svh;
+  }
+
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-gray-100 text-foreground font-sans antialiased;
     margin: 0;
+  }
+
+  #root {
+    @apply flex flex-col;
   }
 }

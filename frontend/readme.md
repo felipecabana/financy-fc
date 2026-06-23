@@ -116,7 +116,7 @@ Tipos `Category` e `Transaction` em `src/types/index.ts`. Queries `LIST_CATEGORI
 
 A página `Dashboard` exibe cards de resumo, transações recentes e categorias do usuário logado, com estados de loading, erro e listas vazias. Componentes em `pages/Dashboard/components/` (`SummaryCards`, `TransactionsSection`, `TransactionList`, `CategoriesSection`, `CategoryList`, `TransactionDialog`, `CategoryDialog`, `DeleteConfirmDialog`).
 
-O botão **Nova transação** abre o `TransactionDialog` em modo criação. O formulário valida descrição, data, valor, tipo e categoria (opcional) com Zod e envia `createTransaction` ou `updateTransaction` via Apollo, com feedback por toast e atualização da lista após sucesso.
+O botão **Nova transação** abre o `TransactionDialog` em modo criação. O formulário valida descrição, data, valor, tipo e categoria (opcional) com Zod e envia `createTransaction` ou `updateTransaction` via Apollo — incluindo a data da movimentação — com feedback por toast e atualização da lista após sucesso. A `TransactionList` ordena e exibe essa data no dashboard e na página de transações.
 
 O botão **Nova categoria** abre o `CategoryDialog` em modo criação; cada item da lista de categorias expõe **Editar** para abrir o mesmo modal em modo edição. O formulário valida título, ícone e cor (obrigatórios) e descrição (opcional) com Zod e envia `createCategory` ou `updateCategory` via Apollo, com feedback por toast e atualização da lista após sucesso. A `CategoryList` exibe o ícone e a cor de cada categoria, com fallback visual para registros legados sem esses campos.
 

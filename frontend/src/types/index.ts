@@ -50,6 +50,7 @@ export interface CreateTransactionInput {
   title: string
   amount: number
   type: string
+  date: string
   categoryId?: string | null
 }
 
@@ -57,6 +58,7 @@ export interface UpdateTransactionInput {
   title?: string
   amount?: number
   type?: string
+  date?: string
   categoryId?: string | null
 }
 
@@ -65,6 +67,7 @@ export interface Transaction {
   title: string
   amount: number
   type: string
+  date: string
   userId: string
   categoryId?: string | null
   category?: Category | null

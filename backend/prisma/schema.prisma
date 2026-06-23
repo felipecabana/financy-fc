@@ -36,6 +36,7 @@ model Transaction {
   title      String
   amount     Float
   type       String
+  date       DateTime
   userId     String
   categoryId String?
   createdAt  DateTime  @default(now())

@@ -115,7 +115,7 @@ SQLite via Prisma. Três tabelas na migration inicial:
 
 **Category** — `id`, `name`, `description` (opcional), `icon`, `color`, `userId`, timestamps. Ligada ao usuário; se o user for apagado, as categorias somem junto (`onDelete: Cascade`). Ícone e cor são obrigatórios em novas categorias; registros antigos podem tê-los nulos.
 
-**Transaction** — `id`, `title`, `amount`, `type`, `userId`, `categoryId` (opcional), timestamps. Também pertence ao usuário com cascade. A categoria é opcional.
+**Transaction** — `id`, `title`, `amount`, `type`, `date`, `userId`, `categoryId` (opcional), timestamps. Também pertence ao usuário com cascade. A categoria é opcional. O campo `date` guarda a data da movimentação informada pelo usuário; registros antigos recebem `createdAt` como valor inicial na migration.
 
 O client fica num singleton em `prisma/prisma.ts` pra não abrir conexão nova a cada hot-reload no dev.
 
@@ -189,9 +189,9 @@ Testes em `tests/` cobrem service, resolvers, schema GraphQL, mutations in-proce
 
 ### CRUD de transações
 
-O módulo em `graphql/modules/transactions/` delega para `transaction.service.ts`, com o mesmo critério de isolamento por `userId`. Cada usuário só acessa as próprias transações; a categoria vinculada (`categoryId`) é opcional e precisa pertencer ao mesmo usuário.
+O módulo em `graphql/modules/transactions/` delega para `transaction.service.ts`, com o mesmo critério de isolamento por `userId`. Cada usuário só acessa as próprias transações; a categoria vinculada (`categoryId`) é opcional e precisa pertencer ao mesmo usuário. Criação e edição exigem `date` no formato `YYYY-MM-DD`.
 
-Validações e erros em português, por exemplo: `Título é obrigatório.`, `Transação não encontrada.`, `Sem permissão para realizar esta ação.`
+Validações e erros em português, por exemplo: `Título é obrigatório.`, `Data é obrigatória.`, `Data inválida.`, `Transação não encontrada.`, `Sem permissão para realizar esta ação.`
 
 Testes em `tests/` cobrem service, resolvers, schema GraphQL, mutations in-process e smoke HTTP de transações.
 
@@ -291,7 +291,7 @@ Exemplo de `createTransaction`:
 curl -X POST http://localhost:4000/graphql \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer SEU_TOKEN_AQUI" \
-  -d '{"query":"mutation { createTransaction(data: { title: \"Salário\", amount: 5000, type: \"receita\" }) { id title amount type } }"}'
+  -d '{"query":"mutation { createTransaction(data: { title: \"Salário\", amount: 5000, type: \"receita\", date: \"2026-06-15\" }) { id title amount type date } }"}'
 ```
 
 Outros comandos úteis: `npm run check` (validação completa), `npm run test`, `npm run build`.

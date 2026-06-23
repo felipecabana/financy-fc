@@ -68,7 +68,7 @@ function getRowStyle(transaction: Transaction, index: number) {
 
 function sortTransactions(transactions: Transaction[]) {
   return [...transactions].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
   )
 }
 
@@ -134,7 +134,7 @@ function PageRow({ transaction, index, onEdit, onDelete }: PageRowProps) {
       </div>
 
       <div className="w-28 shrink-0 px-6 text-center text-sm text-gray-600">
-        {formatDate(transaction.createdAt)}
+        {formatDate(transaction.date)}
       </div>
 
       <div className="flex w-48 shrink-0 justify-center px-6">
@@ -241,7 +241,7 @@ function CompactRow({
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
             <span className="shrink-0 text-sm text-gray-600">
-              {formatDate(transaction.createdAt)}
+              {formatDate(transaction.date)}
             </span>
             <span
               className={cn(

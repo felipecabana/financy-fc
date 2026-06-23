@@ -6,6 +6,7 @@ interface CreateTransactionInput {
   title: string
   amount: number
   type: string
+  date: string
   categoryId?: string
 }
 
@@ -13,6 +14,7 @@ interface UpdateTransactionInput {
   title?: string
   amount?: number
   type?: string
+  date?: string
   categoryId?: string
 }
 
@@ -35,10 +37,29 @@ class TransactionService {
     }
   }
 
+  private parseDate(value: string | undefined) {
+    if (!value?.trim()) {
+      throw new UnauthorizedError('Data é obrigatória.')
+    }
+
+    const trimmed = value.trim()
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+      throw new UnauthorizedError('Data inválida.')
+    }
+
+    const parsed = new Date(`${trimmed}T00:00:00.000Z`)
+    if (Number.isNaN(parsed.getTime())) {
+      throw new UnauthorizedError('Data inválida.')
+    }
+
+    return parsed
+  }
+
   private assertCreateFields(data: CreateTransactionInput) {
     this.assertTitle(data.title)
     this.assertAmount(data.amount)
     this.assertType(data.type)
+    this.parseDate(data.date)
   }
 
   async listTransactions(userId: string) {
@@ -61,6 +82,7 @@ class TransactionService {
         title: data.title.trim(),
         amount: data.amount,
         type: data.type.trim(),
+        date: this.parseDate(data.date),
         categoryId: data.categoryId,
         userId,
       },
@@ -89,6 +111,7 @@ class TransactionService {
         title: data.title?.trim(),
         amount: data.amount ?? undefined,
         type: data.type?.trim(),
+        date: data.date !== undefined ? this.parseDate(data.date) : undefined,
         categoryId: data.categoryId ?? undefined,
       },
     })

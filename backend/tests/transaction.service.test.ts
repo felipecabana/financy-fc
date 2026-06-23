@@ -16,6 +16,8 @@ import {
 } from './helpers/domain-error-assertions.js'
 import { categoryInput } from './helpers/category-test-utils.js'
 
+const transactionDate = '2026-06-15'
+
 describe('transaction service', () => {
   const cleanup = createEmailCleanup()
 
@@ -38,11 +40,13 @@ describe('transaction service', () => {
       title: 'Salário',
       amount: 5000,
       type: 'receita',
+      date: transactionDate,
     })
     await transactionService.createTransaction(userB, {
       title: 'Aluguel',
       amount: 1200,
       type: 'despesa',
+      date: transactionDate,
     })
 
     const transactions = await transactionService.listTransactions(userA)
@@ -57,6 +61,7 @@ describe('transaction service', () => {
       title: 'Mercado',
       amount: 150,
       type: 'despesa',
+      date: transactionDate,
     })
     const found = await transactionService.getTransaction(owner, transaction.id)
 
@@ -81,23 +86,35 @@ describe('transaction service', () => {
       title: '  Internet  ',
       amount: 99.9,
       type: '  despesa  ',
+      date: transactionDate,
     })
     expect(transaction.title).toBe('Internet')
     expect(transaction.type).toBe('despesa')
+    expect(transaction.date.toISOString()).toBe('2026-06-15T00:00:00.000Z')
 
     await expectDomainError(
-      transactionService.createTransaction(userId, { title: '', amount: 10, type: 'despesa' }),
+      transactionService.createTransaction(userId, { title: '', amount: 10, type: 'despesa', date: transactionDate }),
       DOMAIN_ERRORS.titleRequired,
       DOMAIN_ERROR_CODES.UNAUTHORIZED,
     )
     await expectDomainError(
-      transactionService.createTransaction(userId, { title: 'X', amount: Number.NaN, type: 'despesa' }),
+      transactionService.createTransaction(userId, { title: 'X', amount: Number.NaN, type: 'despesa', date: transactionDate }),
       DOMAIN_ERRORS.amountRequired,
       DOMAIN_ERROR_CODES.UNAUTHORIZED,
     )
     await expectDomainError(
-      transactionService.createTransaction(userId, { title: 'X', amount: 10, type: '   ' }),
+      transactionService.createTransaction(userId, { title: 'X', amount: 10, type: '   ', date: transactionDate }),
       DOMAIN_ERRORS.typeRequired,
+      DOMAIN_ERROR_CODES.UNAUTHORIZED,
+    )
+    await expectDomainError(
+      transactionService.createTransaction(userId, { title: 'X', amount: 10, type: 'despesa', date: '' }),
+      DOMAIN_ERRORS.dateRequired,
+      DOMAIN_ERROR_CODES.UNAUTHORIZED,
+    )
+    await expectDomainError(
+      transactionService.createTransaction(userId, { title: 'X', amount: 10, type: 'despesa', date: '15/06/2026' }),
+      DOMAIN_ERRORS.dateInvalid,
       DOMAIN_ERROR_CODES.UNAUTHORIZED,
     )
   })
@@ -113,6 +130,7 @@ describe('transaction service', () => {
       title: 'Aluguel',
       amount: 1200,
       type: 'despesa',
+      date: transactionDate,
       categoryId: category.id,
     })
     expect(withCategory.categoryId).toBe(category.id)
@@ -122,6 +140,7 @@ describe('transaction service', () => {
         title: 'X',
         amount: 1,
         type: 'despesa',
+        date: transactionDate,
         categoryId: otherCategory.id,
       }),
       DOMAIN_ERRORS.noPermission,
@@ -132,6 +151,7 @@ describe('transaction service', () => {
         title: 'X',
         amount: 1,
         type: 'despesa',
+        date: transactionDate,
         categoryId: '00000000-0000-0000-0000-000000000000',
       }),
       DOMAIN_ERRORS.categoryNotFound,
@@ -147,14 +167,17 @@ describe('transaction service', () => {
       title: 'Cinema',
       amount: 40,
       type: 'despesa',
+      date: transactionDate,
     })
     const updated = await transactionService.updateTransaction(owner, transaction.id, {
       title: 'Streaming',
       amount: 55,
+      date: '2026-07-01',
     })
 
     expect(updated.title).toBe('Streaming')
     expect(updated.amount).toBe(55)
+    expect(updated.date.toISOString()).toBe('2026-07-01T00:00:00.000Z')
 
     await expectDomainError(
       transactionService.updateTransaction(other, transaction.id, { title: 'X' }),
@@ -176,6 +199,7 @@ describe('transaction service', () => {
       title: 'Farmácia',
       amount: 30,
       type: 'despesa',
+      date: transactionDate,
     })
 
     await expectDomainError(

@@ -52,6 +52,7 @@ function toMutationInput(data: TransactionFormValues): CreateTransactionInput {
     title: data.title,
     amount: data.amount,
     type: data.type,
+    date: data.date,
     categoryId: data.categoryId ?? null,
   }
 }
@@ -120,7 +121,7 @@ export function TransactionDialog({
 
     if (isEdit && transaction) {
       setTitle(transaction.title)
-      setDate(toInputDate(transaction.createdAt))
+      setDate(toInputDate(transaction.date))
       setAmount(String(transaction.amount))
       setType(resolveType(transaction.type))
       setCategoryId(transaction.categoryId ?? '')

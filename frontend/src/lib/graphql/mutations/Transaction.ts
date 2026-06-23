@@ -9,6 +9,7 @@ export const CREATE_TRANSACTION = gql`
       title
       amount
       type
+      date
       createdAt
     }
   }
@@ -21,6 +22,7 @@ export const UPDATE_TRANSACTION = gql`
       title
       amount
       type
+      date
       updatedAt
     }
   }
@@ -33,11 +35,11 @@ export const DELETE_TRANSACTION = gql`
 `
 
 export type CreateTransactionMutationData = {
-  createTransaction: Pick<Transaction, 'id' | 'title' | 'amount' | 'type' | 'createdAt'>
+  createTransaction: Pick<Transaction, 'id' | 'title' | 'amount' | 'type' | 'date' | 'createdAt'>
 }
 
 export type UpdateTransactionMutationData = {
-  updateTransaction: Pick<Transaction, 'id' | 'title' | 'amount' | 'type' | 'updatedAt'>
+  updateTransaction: Pick<Transaction, 'id' | 'title' | 'amount' | 'type' | 'date' | 'updatedAt'>
 }
 
 export type CreateTransactionMutationVariables = {

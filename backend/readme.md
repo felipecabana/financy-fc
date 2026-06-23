@@ -39,6 +39,7 @@ backend/
 │   ├── helpers/
 │   │   ├── password.ts       # hash e verificação de senha
 │   │   ├── jwt.ts            # criação e validação de token
+│   │   ├── auth-cookie.ts    # cookie HttpOnly de sessão (set/clear)
 │   │   └── ownership.ts      # existência e permissão por usuário
 │   └── errors/
 │       ├── AppGraphQLError.ts
@@ -72,7 +73,7 @@ O arquivo `src/config/env/index.ts` lê o `.env`, valida com Zod e **não deixa 
 
 ### Servidor GraphQL
 
-O `src/index.ts` monta Express + CORS (origem do `FRONTEND_URL`) + Apollo em `/graphql`, injetando `buildContext` em cada request. O Apollo recebe o objeto `graphql` exportado por `graphql/compose.ts`.
+O `src/index.ts` monta Express + CORS (origem do `FRONTEND_URL`, `credentials: true`) + `cookie-parser` + Apollo em `/graphql`, injetando `buildContext` em cada request. O Apollo recebe o objeto `graphql` exportado por `graphql/compose.ts`.
 
 A composição do schema é feita em `graphql/compose.ts`: os arquivos `.gql` de `schema/` e `modules/` são carregados com `loadFilesSync` e unidos com `mergeTypeDefs`; os resolvers dos módulos são combinados com `mergeResolvers`. Novos domínios entram criando pasta em `modules/` com `schema.gql` e `resolvers.ts` — o wiring em `compose.ts` importa os resolvers manualmente.
 
@@ -91,6 +92,7 @@ type Query {
 type Mutation {
   signup(data: SignupInput!): AuthPayload!
   login(data: LoginInput!): AuthPayload!
+  logout: Boolean!
   createCategory(data: CreateCategoryInput!): Category!
   updateCategory(id: String!, data: UpdateCategoryInput!): Category!
   deleteCategory(id: String!): Boolean!
@@ -100,7 +102,7 @@ type Mutation {
 }
 ```
 
-`signup` e `login` são públicos e retornam `token` + `user` (sem campo `password`). `me` e as operações de categoria e transação exigem `Authorization: Bearer <token>`.
+`signup` e `login` são públicos, retornam só `user` (sem `password`) e definem um cookie HttpOnly `auth` com o JWT. `logout` limpa esse cookie. `me` e as operações de categoria e transação exigem sessão autenticada via cookie `auth` ou header `Authorization: Bearer <token>`.
 
 - `npm run dev` — nodemon + tsx, recarrega ao salvar
 - `npm run start` — roda o build compilado (`dist/`), com os `.gql` já copiados
@@ -150,20 +152,32 @@ Utilitários em `src/helpers/` usados pelo `auth.service.ts`:
 
 - **`password.ts`** — `hashPassword` e `verifyPassword` com bcryptjs (10 salt rounds)
 - **`jwt.ts`** — `createToken` e `verifyToken` com payload `{ id }`, expiração de 1 dia e secret do `JWT_SECRET`
+- **`auth-cookie.ts`** — `setAuthCookie` e `clearAuthCookie` com opções `httpOnly`, `secure` (produção), `sameSite: 'lax'`, `path: '/'` e `maxAge` alinhado ao JWT
 
-O `auth.service.ts` valida campos (incluindo nome no cadastro), garante email único, persiste senha hasheada e retorna o usuário público com JWT. Mensagens de erro em português (`Nome, email e senha são obrigatórios.`, `Email já cadastrado.`, `Credenciais inválidas.`).
+O `auth.service.ts` valida campos (incluindo nome no cadastro), garante email único, persiste senha hasheada e retorna o usuário público com JWT para uso interno. Os resolvers de `signup`/`login` gravam o JWT no cookie e expõem só `user` no GraphQL. Mensagens de erro em português (`Nome, email e senha são obrigatórios.`, `Email já cadastrado.`, `Credenciais inválidas.`).
 
 Testes em `tests/` cobrem helpers, service, resolvers, schema GraphQL, mutations in-process e smoke HTTP.
 
 ### Contexto de autenticação
 
-Cada request GraphQL recebe um contexto com `validate()`, montado em `src/config/context/index.ts`:
+Cada request GraphQL recebe um contexto com `validate()` e `res`, montado em `src/config/context/index.ts`:
 
-- lê o header `Authorization: Bearer <token>`
+- tenta primeiro o header `Authorization: Bearer <token>`
+- se não houver Bearer, lê o cookie `auth` (parseado pelo `cookie-parser`)
 - valida o JWT com o helper existente
 - retorna o `userId` autenticado ou lança `UnauthorizedError` (`Usuário não autenticado.`)
 
-O resolver `me` em `graphql/modules/users/` usa esse fluxo para buscar o usuário atual no Prisma. `signup` e `login` continuam acessíveis sem token.
+O resolver `me` em `graphql/modules/users/` usa esse fluxo para buscar o usuário atual no Prisma. `signup`, `login` e `logout` continuam acessíveis sem sessão prévia.
+
+### Cookie de sessão e CSRF
+
+O cookie `auth` usa `SameSite=Lax` — opções em `src/helpers/auth-cookie.ts` (`getAuthCookieOptions`). Não rodamos token CSRF em paralelo.
+
+Frontend e API ficam na origem do `FRONTEND_URL`, com CORS fechado e `credentials: true`. Nesse arranjo, `Lax` já impede o caso que nos importava: outro site mandar POST com o cookie da sessão. O JWT não fica legível no JS (`HttpOnly`); em produção o cookie só vai em HTTPS (`secure`).
+
+`Lax` ainda envia cookie em GET top-level vindo de link externo. Mutations passam por POST; o que sobra disso aceitamos por enquanto.
+
+Se um dia frontend e API ficarem em origens separadas sem proxy same-site, aí sim vale repensar — `Strict`, ou CSRF explícito.
 
 ### CRUD de categorias
 
@@ -237,15 +251,23 @@ curl -X POST http://localhost:4000/graphql \
 
 Deve voltar `{"data":{"_health":"ok"}}`.
 
-Exemplo de signup:
+Exemplo de signup (salva cookie `auth` na resposta; use `-c` para guardar cookies em arquivo):
 
 ```bash
-curl -X POST http://localhost:4000/graphql \
+curl -c cookies.txt -X POST http://localhost:4000/graphql \
   -H "Content-Type: application/json" \
-  -d '{"query":"mutation { signup(data: { name: \"Seu Nome\", email: \"voce@example.com\", password: \"senha123\" }) { token user { id name email } } }"}'
+  -d '{"query":"mutation { signup(data: { name: \"Seu Nome\", email: \"voce@example.com\", password: \"senha123\" }) { user { id name email } } }"}'
 ```
 
-Exemplo de `me` (use o `token` retornado no signup/login):
+Exemplo de `me` com cookie de sessão:
+
+```bash
+curl -b cookies.txt -X POST http://localhost:4000/graphql \
+  -H "Content-Type: application/json" \
+  -d '{"query":"{ me { id name email } }"}'
+```
+
+Alternativa com Bearer (útil em testes manuais):
 
 ```bash
 curl -X POST http://localhost:4000/graphql \
@@ -254,7 +276,7 @@ curl -X POST http://localhost:4000/graphql \
   -d '{"query":"{ me { id name email } }"}'
 ```
 
-Exemplo de `createCategory` (use o `token` retornado no signup/login):
+Exemplo de `createCategory` (cookie ou Bearer):
 
 ```bash
 curl -X POST http://localhost:4000/graphql \

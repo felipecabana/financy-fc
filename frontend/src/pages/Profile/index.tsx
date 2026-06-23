@@ -1,3 +1,4 @@
+import { useMutation } from '@apollo/client/react'
 import { LogOut, Mail, UserRound } from 'lucide-react'
 
 import { Page } from '@/components/Page'
@@ -5,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { LOGOUT_MUTATION } from '@/lib/graphql/mutations'
 import { useAuthStore } from '@/stores/auth'
 import type { User } from '@/types'
 
@@ -27,10 +29,23 @@ export function Profile() {
   const user = useAuthStore((state) => state.user)
   const logout = useAuthStore((state) => state.logout)
 
+  const [logoutMutation, { loading }] = useMutation(LOGOUT_MUTATION, {
+    onCompleted() {
+      logout()
+    },
+    onError() {
+      logout()
+    },
+  })
+
   if (!user) return null
 
   const initials = getUserInitials(user)
   const displayName = (user.name ?? '').trim() || user.email
+
+  const handleLogout = () => {
+    void logoutMutation()
+  }
 
   return (
     <Page className="flex flex-1 flex-col items-center">
@@ -82,7 +97,13 @@ export function Profile() {
             </div>
           </div>
 
-          <Button type="button" variant="outline" className="w-full" onClick={() => logout()}>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            disabled={loading}
+            onClick={handleLogout}
+          >
             <LogOut />
             Sair da conta
           </Button>

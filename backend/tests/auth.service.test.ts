@@ -5,7 +5,7 @@ import { verifyPassword } from '../src/helpers/password.js'
 import authService from '../src/services/auth.service.js'
 import {
   createEmailCleanup,
-  expectValidAuthPayload,
+  expectValidServiceAuth,
   TEST_PASSWORD,
   uniqueEmail,
 } from './helpers/auth-test-utils.js'
@@ -37,7 +37,7 @@ describe('auth service', () => {
       createdAt: expect.any(String),
       updatedAt: expect.any(String),
     })
-    expectValidAuthPayload(result, email)
+    expectValidServiceAuth(result, email)
 
     const stored = await prismaClient.user.findUnique({ where: { email } })
     expect(stored?.name).toBe(TEST_NAME)
@@ -83,7 +83,7 @@ describe('auth service', () => {
     await authService.signup({ name: TEST_NAME, email, password: TEST_PASSWORD })
     const result = await authService.login({ email, password: TEST_PASSWORD })
 
-    expectValidAuthPayload(result, email)
+    expectValidServiceAuth(result, email)
     expect(result.user.name).toBe(TEST_NAME)
   })
 

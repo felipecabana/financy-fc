@@ -27,14 +27,15 @@ frontend/
 │   │   └── ui/                   # shadcn/ui (button, input, label, dialog, card)
 │   ├── lib/
 │   │   ├── graphql/
-│   │   │   ├── apollo.ts         # Apollo Client centralizado + authLink
+│   │   │   ├── apollo.ts         # Apollo Client centralizado (HttpLink + credentials)
 │   │   │   ├── mutations/
-│   │   │   │   ├── Auth.ts       # login e signup
+│   │   │   │   ├── Auth.ts       # login, signup e logout
 │   │   │   │   ├── Category.ts   # createCategory, updateCategory e deleteCategory
 │   │   │   │   └── Transaction.ts # createTransaction, updateTransaction e deleteTransaction
 │   │   │   └── queries/
 │   │   │       ├── Category.ts   # listCategories
-│   │   │       └── Transaction.ts # listTransactions
+│   │   │       ├── Transaction.ts # listTransactions
+│   │   │       └── User.ts       # me
 │   │   └── utils.ts              # utilitários globais (cn)
 │   ├── pages/
 │   │   ├── Auth/
@@ -57,7 +58,7 @@ frontend/
 │   │   └── auth.ts               # Zustand + persist
 │   ├── types/
 │   │   └── index.ts
-│   ├── App.tsx                   # Layout global, rotas e ProtectedRoute
+│   ├── App.tsx                   # Layout global, rotas, bootstrap de sessão (me) e ProtectedRoute
 │   ├── main.tsx                  # entry point + ApolloProvider + BrowserRouter
 │   ├── index.css                 # tokens e estilos globais (Tailwind)
 │   └── vite-env.d.ts             # tipagem de VITE_BACKEND_URL
@@ -87,9 +88,9 @@ Workspace em `frontend/` com TypeScript strict, módulos ESM e build em `dist/`.
 
 ### Ambiente e cliente GraphQL
 
-Variável `VITE_BACKEND_URL` documentada em `.env.example` (fallback local: `http://localhost:4000/graphql`). O Apollo Client vive em `src/lib/graphql/apollo.ts` — `HttpLink`, `authLink` e cache únicos para todo o app. O token de autenticação é lido via `useAuthStore.getState().token` no `authLink` de `src/lib/graphql/apollo.ts`. O `main.tsx` envolve o app com `ApolloProvider`.
+Variável `VITE_BACKEND_URL` documentada em `.env.example` (fallback local: `http://localhost:4000/graphql`). O Apollo Client vive em `src/lib/graphql/apollo.ts` — `HttpLink` com `credentials: 'include'` para enviar o cookie de sessão automaticamente. O `main.tsx` envolve o app com `ApolloProvider`.
 
-Testes em `tests/apollo.test.ts` cobrem a URL do backend e o transporte HTTP do link GraphQL.
+Testes em `tests/apollo.test.ts` cobrem a URL do backend, o transporte HTTP e o envio de cookies nas requisições.
 
 ### Sistema visual e componentes
 
@@ -99,13 +100,15 @@ Shell de layout em `Layout`, `Page` e `Header`, com notificações via `Toaster`
 
 ### Autenticação e roteamento
 
-Store `useAuthStore` em `src/stores/auth.ts` (Zustand + persist) guarda `token`, `user` e `isAuthenticated`, com reidratação do `localStorage` e `logout` que limpa o cache do Apollo. O `authLink` lê o token via `useAuthStore.getState().token`.
+Store `useAuthStore` em `src/stores/auth.ts` (Zustand + persist) guarda só `user` e `isAuthenticated` — sem JWT no `localStorage`. `setSession(user)` cria a sessão após login ou cadastro; `logout` limpa o store e o cache do Apollo.
+
+No boot do app, `SessionBootstrap` em `App.tsx` executa a query `me` para validar o cookie de sessão e reidratar o usuário após refresh. Enquanto isso, a UI fica em loading para evitar flash de tela errada.
 
 A rota `/` renderiza `Login` ou `Dashboard` conforme a sessão (`RootPage`), sem redirect. Rotas protegidas em `/transactions`, `/categories` e `/profile`; cadastro em `/signup` com `GuestRoute`. O `Header` exibe navbar com links para Dashboard, Transações e Categorias, além do avatar que leva ao perfil; em páginas de visitante, só o logo é mostrado.
 
-Formulários de login e cadastro com validação Zod, mutations GraphQL (`login` e `signup`) e criação de sessão via `setSession` após sucesso. O cadastro envia o nome completo para a API e guarda o campo `name` do usuário na sessão. Erros de credenciais, e-mail duplicado e falha de conexão são exibidos no formulário.
+Formulários de login e cadastro com validação Zod, mutations GraphQL (`login` e `signup`) e criação de sessão via `setSession` após sucesso — a resposta traz só `user`; o JWT fica no cookie HttpOnly definido pelo backend. O cadastro envia o nome completo para a API. Erros de credenciais, e-mail duplicado e falha de conexão são exibidos no formulário.
 
-Testes em `tests/auth-store.test.ts`, `tests/auth-navigation.test.tsx` e `tests/auth-forms.test.tsx` cobrem persistência, guards, navegação entre páginas e fluxo dos formulários.
+Testes em `tests/auth-store.test.ts`, `tests/auth-navigation.test.tsx`, `tests/auth-forms.test.tsx` e `tests/app-session.test.tsx` cobrem persistência sem token, guards, navegação, fluxo dos formulários e restauração de sessão via `me`.
 
 ### Dashboard autenticado
 
@@ -127,7 +130,7 @@ Testes em `tests/dashboard-data.test.tsx` cobrem skip sem sessão, carregamento 
 
 As rotas `/transactions` e `/categories` reutilizam `TransactionList`, `CategoryList`, os dialogs e `useDashboardData` para CRUD completo fora do dashboard. Em telas menores que 1024px, a lista de transações usa layout compacto em cards; em telas largas, mantém a tabela com todas as colunas.
 
-A rota `/profile` exibe nome, e-mail e iniciais da sessão, com campos somente leitura e botão **Sair da conta** que chama `logout()` e redireciona para o login.
+A rota `/profile` exibe nome, e-mail e iniciais da sessão, com campos somente leitura e botão **Sair da conta** que chama a mutation `logout` no servidor, limpa a sessão local e redireciona para o login.
 
 Os modais `TransactionDialog` e `CategoryDialog` compartilham o cabeçalho visual `FormDialogHeader` (título, subtítulo e botão fechar). O modelo de categoria permanece apenas com o campo título.
 

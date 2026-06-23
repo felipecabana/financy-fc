@@ -10,11 +10,9 @@ import categoryService from '../src/services/category.service.js'
 import {
   createEmailCleanup,
   getApolloSingleResult,
-  SIGNUP_MUTATION,
-  signupData,
+  signupForBearer,
   TEST_PASSWORD,
   uniqueEmail,
-  type AuthPayload,
 } from './helpers/auth-test-utils.js'
 import {
   DOMAIN_ERROR_CODES,
@@ -62,18 +60,8 @@ describe('GraphQL errors (integração com formatError)', () => {
     await cleanup.reset()
   })
 
-  async function signup(prefix: string): Promise<AuthPayload> {
-    const email = uniqueEmail(prefix)
-    cleanup.track(email)
-
-    const result = getApolloSingleResult(
-      await server.executeOperation({
-        query: SIGNUP_MUTATION,
-        variables: { data: signupData(email) },
-      }),
-    )
-
-    return result.data!.signup
+  async function signup(prefix: string) {
+    return signupForBearer(cleanup, prefix)
   }
 
   async function asUser(token: string, query: string, variables?: Record<string, unknown>) {

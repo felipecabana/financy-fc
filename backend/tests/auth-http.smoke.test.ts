@@ -1,13 +1,19 @@
 // Smoke HTTP: sobe o servidor real e valida mutations via POST /graphql.
-import { type ChildProcess, spawn } from 'node:child_process'
+import { type ChildProcess } from 'node:child_process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
 import {
+  AUTH_COOKIE_NAME,
   createEmailCleanup,
+  expectHttpAuthCookie,
+  expectHttpAuthCookieCleared,
   expectValidAuthPayload,
   LOGIN_MUTATION,
+  LOGOUT_MUTATION,
+  ME_QUERY,
+  readSessionCookieHeader,
   SIGNUP_MUTATION,
   signupData,
   TEST_PASSWORD,
@@ -20,46 +26,27 @@ import {
   DOMAIN_ERRORS,
   expectGraphqlError,
 } from './helpers/domain-error-assertions.js'
+import { startSmokeServer, stopSmokeServer } from './helpers/smoke-server.js'
 
 const backendRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
-const smokePort = 4104
-const graphqlUrl = `http://127.0.0.1:${smokePort}/graphql`
+let graphqlUrl: string
 
-async function waitForServer(process: ChildProcess) {
-  const deadline = Date.now() + 30_000
+async function postGraphql<T>(
+  query: string,
+  variables?: Record<string, unknown>,
+  cookie?: string,
+) {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (cookie) headers.Cookie = cookie.includes('=') ? cookie : `${AUTH_COOKIE_NAME}=${cookie}`
 
-  while (Date.now() < deadline) {
-    if (process.exitCode !== null) {
-      throw new Error('Servidor encerrou antes de ficar pronto')
-    }
-
-    try {
-      const response = await fetch(graphqlUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: '{ _health }' }),
-      })
-
-      if (response.ok) return
-    } catch {
-      // servidor ainda subindo
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, 200))
-  }
-
-  throw new Error('Timeout aguardando servidor HTTP')
-}
-
-async function postGraphql<T>(query: string, variables?: Record<string, unknown>) {
   const response = await fetch(graphqlUrl, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ query, variables }),
   })
 
   expect(response.ok).toBe(true)
-  return (await response.json()) as T
+  return { body: (await response.json()) as T, headers: response.headers }
 }
 
 describe('auth HTTP smoke', () => {
@@ -67,41 +54,34 @@ describe('auth HTTP smoke', () => {
   const cleanup = createEmailCleanup()
 
   beforeAll(async () => {
-    serverProcess = spawn('npx', ['tsx', 'src/index.ts'], {
-      cwd: backendRoot,
-      env: { ...process.env, PORT: String(smokePort) },
-      stdio: ['ignore', 'pipe', 'pipe'],
-      shell: true,
-    })
-
-    await waitForServer(serverProcess)
+    const server = await startSmokeServer(backendRoot)
+    graphqlUrl = server.graphqlUrl
+    serverProcess = server.serverProcess
   }, 60_000)
 
   afterAll(async () => {
     await cleanup.reset()
-
-    if (!serverProcess.killed) {
-      serverProcess.kill()
-    }
+    stopSmokeServer(serverProcess)
   })
 
   afterEach(async () => {
     await cleanup.reset()
   })
 
-  it('signup retorna usuário público e token válido', async () => {
+  it('signup retorna usuário público e seta cookie HttpOnly', async () => {
     const email = uniqueEmail('http-smoke')
     cleanup.track(email)
 
-    const result = await postGraphql<SignupResponse>(SIGNUP_MUTATION, {
+    const { body: result, headers } = await postGraphql<SignupResponse>(SIGNUP_MUTATION, {
       data: signupData(email),
     })
 
     expect(result.errors).toBeUndefined()
     expectValidAuthPayload(result.data!.signup, email)
+    expectHttpAuthCookie(headers)
   })
 
-  it('login retorna JWT com credenciais válidas', async () => {
+  it('login retorna usuário público e seta cookie HttpOnly', async () => {
     const email = uniqueEmail('http-smoke')
     cleanup.track(email)
 
@@ -109,12 +89,13 @@ describe('auth HTTP smoke', () => {
       data: signupData(email),
     })
 
-    const result = await postGraphql<LoginResponse>(LOGIN_MUTATION, {
-      data: signupData(email),
+    const { body: result, headers } = await postGraphql<LoginResponse>(LOGIN_MUTATION, {
+      data: { email, password: TEST_PASSWORD },
     })
 
     expect(result.errors).toBeUndefined()
     expectValidAuthPayload(result.data!.login, email)
+    expectHttpAuthCookie(headers)
   })
 
   it('signup rejeita email duplicado', async () => {
@@ -125,7 +106,7 @@ describe('auth HTTP smoke', () => {
       data: signupData(email),
     })
 
-    const result = await postGraphql<SignupResponse>(SIGNUP_MUTATION, {
+    const { body: result } = await postGraphql<SignupResponse>(SIGNUP_MUTATION, {
       data: signupData(email, 'other-password'),
     })
 
@@ -145,11 +126,11 @@ describe('auth HTTP smoke', () => {
       data: signupData(email),
     })
 
-    const missingEmail = await postGraphql<LoginResponse>(LOGIN_MUTATION, {
+    const { body: missingEmail } = await postGraphql<LoginResponse>(LOGIN_MUTATION, {
       data: { email: 'missing@example.com', password: TEST_PASSWORD },
     })
 
-    const wrongPassword = await postGraphql<LoginResponse>(LOGIN_MUTATION, {
+    const { body: wrongPassword } = await postGraphql<LoginResponse>(LOGIN_MUTATION, {
       data: { email, password: 'wrong-password' },
     })
 
@@ -163,6 +144,63 @@ describe('auth HTTP smoke', () => {
     expectGraphqlError(
       wrongPassword.errors?.[0],
       DOMAIN_ERRORS.invalidCredentials,
+      DOMAIN_ERROR_CODES.UNAUTHORIZED,
+    )
+  })
+
+  it('me autentica via cookie sem Bearer', async () => {
+    const email = uniqueEmail('http-smoke')
+    cleanup.track(email)
+
+    const { headers: signupHeaders } = await postGraphql<SignupResponse>(SIGNUP_MUTATION, {
+      data: signupData(email),
+    })
+    const cookieHeader = readSessionCookieHeader(signupHeaders)
+
+    const { body: meResult } = await postGraphql<{ data?: { me: { id: string; email: string } } }>(
+      ME_QUERY,
+      undefined,
+      cookieHeader,
+    )
+
+    expect(meResult.errors).toBeUndefined()
+    expect(meResult.data?.me.email).toBe(email)
+  })
+
+  it('logout limpa cookie de sessão', async () => {
+    const email = uniqueEmail('http-smoke')
+    cleanup.track(email)
+
+    const { headers: signupHeaders } = await postGraphql<SignupResponse>(SIGNUP_MUTATION, {
+      data: signupData(email),
+    })
+    const cookieHeader = readSessionCookieHeader(signupHeaders)
+
+    const { body: logoutResult, headers: logoutHeaders } = await postGraphql<{
+      data?: { logout: boolean }
+    }>(LOGOUT_MUTATION, undefined, cookieHeader)
+
+    expect(logoutResult.data?.logout).toBe(true)
+    expectHttpAuthCookieCleared(logoutHeaders)
+  })
+
+  it('me rejeita após logout sem cookie de sessão', async () => {
+    const email = uniqueEmail('http-smoke')
+    cleanup.track(email)
+
+    const { headers: signupHeaders } = await postGraphql<SignupResponse>(SIGNUP_MUTATION, {
+      data: signupData(email),
+    })
+    const cookieHeader = readSessionCookieHeader(signupHeaders)
+
+    await postGraphql<{ data?: { logout: boolean } }>(LOGOUT_MUTATION, undefined, cookieHeader)
+
+    const { body: meResult } = await postGraphql<{ data?: { me: { email: string } } }>(ME_QUERY)
+
+    expect(meResult.data?.me).toBeUndefined()
+    expectGraphqlError(
+      meResult.errors?.[0],
+      DOMAIN_ERRORS.unauthenticated,
       DOMAIN_ERROR_CODES.UNAUTHORIZED,
     )
   })

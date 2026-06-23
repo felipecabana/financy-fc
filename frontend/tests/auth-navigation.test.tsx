@@ -1,17 +1,23 @@
 // @vitest-environment jsdom
 
 import { ApolloProvider } from '@apollo/client/react'
-import { afterEach, describe, expect, it } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 
 import { App, GuestRoute, ProtectedRoute } from '@/App'
 import { apolloClient } from '@/lib/graphql/apollo'
 import { RootPage } from '@/pages/Root'
 import { useAuthStore } from '@/stores/auth'
-import { mockUser, resetAuthStore } from './helpers/auth-test-utils'
+import {
+  mockUser,
+  resetAuthStore,
+  stubAppGraphQLFetch,
+  waitForSessionBootstrap,
+} from './helpers/auth-test-utils'
 
-function renderApp(initialRoute = '/') {
+function renderApp(initialRoute = '/', me: typeof mockUser | null = null) {
+  stubAppGraphQLFetch({ me })
   return render(
     <ApolloProvider client={apolloClient}>
       <MemoryRouter initialEntries={[initialRoute]}>
@@ -33,6 +39,7 @@ function renderRootPage() {
 
 afterEach(async () => {
   cleanup()
+  vi.unstubAllGlobals()
   await resetAuthStore()
 })
 
@@ -45,7 +52,6 @@ describe('auth navigation', () => {
 
   it('RootPage exibe Dashboard com sessao', () => {
     useAuthStore.setState({
-      token: 'jwt-test-token',
       user: mockUser,
       isAuthenticated: true,
     })
@@ -55,38 +61,38 @@ describe('auth navigation', () => {
     expect(screen.getByText('Transações recentes')).toBeTruthy()
   })
 
-  it('exibe Signup em /signup', () => {
+  it('exibe Signup em /signup', async () => {
     renderApp('/signup')
+    await waitForSessionBootstrap()
 
     expect(screen.getByRole('heading', { name: 'Criar conta' })).toBeTruthy()
   })
 
-  it('navega de login para signup pelo link Criar conta', () => {
+  it('navega de login para signup pelo link Criar conta', async () => {
     renderApp('/')
+    await waitForSessionBootstrap()
 
     fireEvent.click(screen.getByRole('link', { name: 'Criar conta' }))
 
     expect(screen.getByRole('heading', { name: 'Criar conta' })).toBeTruthy()
   })
 
-  it('navega de signup para login pelo link Fazer login', () => {
+  it('navega de signup para login pelo link Fazer login', async () => {
     renderApp('/signup')
+    await waitForSessionBootstrap()
 
     fireEvent.click(screen.getByRole('link', { name: 'Fazer login' }))
 
     expect(screen.getByRole('heading', { name: 'Fazer login' })).toBeTruthy()
   })
 
-  it('redireciona /signup para Dashboard quando autenticado', () => {
-    useAuthStore.setState({
-      token: 'jwt-test-token',
-      user: mockUser,
-      isAuthenticated: true,
+  it('redireciona /signup para Dashboard quando autenticado', async () => {
+    renderApp('/signup', mockUser)
+    await waitForSessionBootstrap()
+
+    await waitFor(() => {
+      expect(screen.getByText('Transações recentes')).toBeTruthy()
     })
-
-    renderApp('/signup')
-
-    expect(screen.getByText('Transações recentes')).toBeTruthy()
     expect(screen.queryByRole('heading', { name: 'Criar conta' })).toBeNull()
   })
 
@@ -113,7 +119,6 @@ describe('auth navigation', () => {
 
   it('GuestRoute redireciona para / com sessao', () => {
     useAuthStore.setState({
-      token: 'jwt-test-token',
       user: mockUser,
       isAuthenticated: true,
     })
@@ -137,28 +142,25 @@ describe('auth navigation', () => {
     expect(screen.getByRole('heading', { name: 'Dashboard' })).toBeTruthy()
   })
 
-  it('nao exibe links da navbar sem sessao em /', () => {
+  it('nao exibe links da navbar sem sessao em /', async () => {
     renderApp('/')
+    await waitForSessionBootstrap()
 
     expect(screen.queryByRole('navigation', { name: 'Principal' })).toBeNull()
     expect(screen.queryByRole('link', { name: 'Transações' })).toBeNull()
   })
 
-  it('nao exibe links da navbar em /signup', () => {
+  it('nao exibe links da navbar em /signup', async () => {
     renderApp('/signup')
+    await waitForSessionBootstrap()
 
     expect(screen.queryByRole('navigation', { name: 'Principal' })).toBeNull()
     expect(screen.queryByRole('link', { name: 'Categorias' })).toBeNull()
   })
 
-  it('exibe navbar autenticada no Dashboard', () => {
-    useAuthStore.setState({
-      token: 'jwt-test-token',
-      user: mockUser,
-      isAuthenticated: true,
-    })
-
-    renderApp('/')
+  it('exibe navbar autenticada no Dashboard', async () => {
+    renderApp('/', mockUser)
+    await waitForSessionBootstrap()
 
     expect(screen.getByRole('navigation', { name: 'Principal' })).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Dashboard' })).toBeTruthy()
@@ -168,14 +170,9 @@ describe('auth navigation', () => {
     expect(screen.getByRole('link', { name: 'Perfil' }).textContent).toBe('MS')
   })
 
-  it('navega para /transactions pelo link da navbar', () => {
-    useAuthStore.setState({
-      token: 'jwt-test-token',
-      user: mockUser,
-      isAuthenticated: true,
-    })
-
-    renderApp('/')
+  it('navega para /transactions pelo link da navbar', async () => {
+    renderApp('/', mockUser)
+    await waitForSessionBootstrap()
 
     fireEvent.click(screen.getByRole('link', { name: 'Transações' }))
 
@@ -184,63 +181,46 @@ describe('auth navigation', () => {
 
   it.each(['/transactions', '/categories', '/profile'])(
     'ProtectedRoute redireciona %s para / sem sessao',
-    (path) => {
+    async (path) => {
       renderApp(path)
+      await waitForSessionBootstrap()
 
-      expect(screen.getByRole('heading', { name: 'Fazer login' })).toBeTruthy()
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: 'Fazer login' })).toBeTruthy()
+      })
     },
   )
 
-  it('navega para /transactions pelo link Ver todas no Dashboard', () => {
-    useAuthStore.setState({
-      token: 'jwt-test-token',
-      user: mockUser,
-      isAuthenticated: true,
-    })
-
-    renderApp('/')
+  it('navega para /transactions pelo link Ver todas no Dashboard', async () => {
+    renderApp('/', mockUser)
+    await waitForSessionBootstrap()
 
     fireEvent.click(screen.getByRole('link', { name: 'Ver todas' }))
 
     expect(screen.getByRole('heading', { name: 'Transações' })).toBeTruthy()
   })
 
-  it('navega para /categories pelo link Gerenciar no Dashboard', () => {
-    useAuthStore.setState({
-      token: 'jwt-test-token',
-      user: mockUser,
-      isAuthenticated: true,
-    })
-
-    renderApp('/')
+  it('navega para /categories pelo link Gerenciar no Dashboard', async () => {
+    renderApp('/', mockUser)
+    await waitForSessionBootstrap()
 
     fireEvent.click(screen.getByRole('link', { name: 'Gerenciar' }))
 
     expect(screen.getByRole('heading', { name: 'Categorias' })).toBeTruthy()
   })
 
-  it('navega para /categories pelo link da navbar', () => {
-    useAuthStore.setState({
-      token: 'jwt-test-token',
-      user: mockUser,
-      isAuthenticated: true,
-    })
-
-    renderApp('/')
+  it('navega para /categories pelo link da navbar', async () => {
+    renderApp('/', mockUser)
+    await waitForSessionBootstrap()
 
     fireEvent.click(screen.getByRole('link', { name: 'Categorias' }))
 
     expect(screen.getByRole('heading', { name: 'Categorias' })).toBeTruthy()
   })
 
-  it('navega para /profile pelo link do avatar', () => {
-    useAuthStore.setState({
-      token: 'jwt-test-token',
-      user: mockUser,
-      isAuthenticated: true,
-    })
-
-    renderApp('/')
+  it('navega para /profile pelo link do avatar', async () => {
+    renderApp('/', mockUser)
+    await waitForSessionBootstrap()
 
     fireEvent.click(screen.getByRole('link', { name: 'Perfil' }))
 

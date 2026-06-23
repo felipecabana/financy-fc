@@ -5,7 +5,6 @@ import type { AuthPayload, LoginInput, SignupInput } from '@/types'
 export const LOGIN_MUTATION = gql`
   mutation Login($data: LoginInput!) {
     login(data: $data) {
-      token
       user {
         id
         name
@@ -20,7 +19,6 @@ export const LOGIN_MUTATION = gql`
 export const SIGNUP_MUTATION = gql`
   mutation Signup($data: SignupInput!) {
     signup(data: $data) {
-      token
       user {
         id
         name
@@ -29,6 +27,12 @@ export const SIGNUP_MUTATION = gql`
         updatedAt
       }
     }
+  }
+`
+
+export const LOGOUT_MUTATION = gql`
+  mutation Logout {
+    logout
   }
 `
 
@@ -46,4 +50,8 @@ export type LoginMutationVariables = {
 
 export type SignupMutationVariables = {
   data: SignupInput
+}
+
+export type LogoutMutationData = {
+  logout: boolean
 }

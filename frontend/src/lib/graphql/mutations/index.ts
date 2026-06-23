@@ -1,8 +1,10 @@
 export {
   LOGIN_MUTATION,
+  LOGOUT_MUTATION,
   SIGNUP_MUTATION,
   type LoginMutationData,
   type LoginMutationVariables,
+  type LogoutMutationData,
   type SignupMutationData,
   type SignupMutationVariables,
 } from './Auth'

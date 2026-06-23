@@ -26,7 +26,7 @@ export function Login() {
 
   const [login, { loading }] = useMutation<LoginMutationData>(LOGIN_MUTATION, {
     onCompleted({ login }) {
-      setSession(login.token, login.user)
+      setSession(login.user)
       toast.success('Login realizado com sucesso')
     },
     onError(error) {

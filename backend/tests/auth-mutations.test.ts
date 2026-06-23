@@ -1,10 +1,12 @@
 // Testes GraphQL in-process: validam mutations via ApolloServer sem subir HTTP.
 import { ApolloServer } from '@apollo/server'
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { verifyPassword } from '../src/helpers/password.js'
 import { prismaClient } from '../prisma/prisma.js'
 import { resolvers, typeDefs } from '../src/graphql/index.js'
+import type { GraphqlContext } from '../src/config/context/index.js'
+import { AUTH_COOKIE_NAME } from '../src/helpers/auth-cookie.js'
 import {
   createEmailCleanup,
   getApolloSingleResult,
@@ -40,15 +42,24 @@ describe('auth mutations (GraphQL)', () => {
     await cleanup.reset()
   })
 
-  it('signup retorna usuário público, token válido e persiste senha hasheada', async () => {
+  function createAuthContext(): GraphqlContext {
+    const res = { cookie: vi.fn() }
+    return { res: res as never, validate: () => '' }
+  }
+
+  it('signup retorna usuário público, seta cookie e persiste senha hasheada', async () => {
     const email = uniqueEmail('auth-mutation')
     cleanup.track(email)
+    const context = createAuthContext()
 
     const result = getApolloSingleResult(
-      await server.executeOperation({
-        query: SIGNUP_MUTATION,
-        variables: { data: signupData(email) },
-      }),
+      await server.executeOperation(
+        {
+          query: SIGNUP_MUTATION,
+          variables: { data: signupData(email) },
+        },
+        { contextValue: context },
+      ),
     )
 
     expect(result.errors).toBeUndefined()
@@ -56,6 +67,11 @@ describe('auth mutations (GraphQL)', () => {
     const signup = result.data?.signup as AuthPayload
     expect(signup.user.name).toBe(TEST_NAME)
     expectValidAuthPayload(signup, email)
+    expect(context.res?.cookie).toHaveBeenCalledWith(
+      AUTH_COOKIE_NAME,
+      expect.any(String),
+      expect.objectContaining({ httpOnly: true }),
+    )
 
     const stored = await prismaClient.user.findUnique({ where: { email } })
     expect(stored?.name).toBe(TEST_NAME)
@@ -63,24 +79,36 @@ describe('auth mutations (GraphQL)', () => {
     await expect(verifyPassword(TEST_PASSWORD, stored!.password)).resolves.toBe(true)
   })
 
-  it('login retorna JWT e usuário público com credenciais válidas', async () => {
+  it('login retorna usuário público e seta cookie com credenciais válidas', async () => {
     const email = uniqueEmail('auth-mutation')
     cleanup.track(email)
 
-    await server.executeOperation({
-      query: SIGNUP_MUTATION,
-      variables: { data: signupData(email) },
-    })
+    await server.executeOperation(
+      {
+        query: SIGNUP_MUTATION,
+        variables: { data: signupData(email) },
+      },
+      { contextValue: createAuthContext() },
+    )
 
+    const context = createAuthContext()
     const result = getApolloSingleResult(
-      await server.executeOperation({
-        query: LOGIN_MUTATION,
-        variables: { data: { email, password: TEST_PASSWORD } },
-      }),
+      await server.executeOperation(
+        {
+          query: LOGIN_MUTATION,
+          variables: { data: { email, password: TEST_PASSWORD } },
+        },
+        { contextValue: context },
+      ),
     )
 
     expect(result.errors).toBeUndefined()
     expectValidAuthPayload(result.data?.login as AuthPayload, email)
+    expect(context.res?.cookie).toHaveBeenCalledWith(
+      AUTH_COOKIE_NAME,
+      expect.any(String),
+      expect.objectContaining({ httpOnly: true }),
+    )
   })
 
   it('signup rejeita email duplicado', async () => {

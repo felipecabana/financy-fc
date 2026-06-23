@@ -65,7 +65,6 @@ function createTransactionsPageFetch(
 
 function authenticate() {
   useAuthStore.setState({
-    token: 'jwt-test-token',
     user: mockUser,
     isAuthenticated: true,
   })

@@ -42,5 +42,13 @@ describe('auth GraphQL schema', () => {
     }
 
     expect(Object.keys(signupInput.getFields()).sort()).toEqual(['email', 'name', 'password'])
+
+    const authPayload = schema.getType('AuthPayload')
+    expect(isObjectType(authPayload)).toBe(true)
+    if (!isObjectType(authPayload)) {
+      throw new Error('AuthPayload type not found')
+    }
+
+    expect(Object.keys(authPayload.getFields()).sort()).toEqual(['user'])
   })
 })

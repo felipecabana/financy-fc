@@ -1,3 +1,4 @@
+import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import express from 'express'
 import { ApolloServer } from '@apollo/server'
@@ -11,6 +12,7 @@ async function bootstrap() {
   const app = express()
 
   app.use(cors({ origin: env.FRONTEND_URL, credentials: true }))
+  app.use(cookieParser())
   app.use(express.json())
 
   const server = new ApolloServer({ ...graphql, formatError })

@@ -17,11 +17,12 @@ import {
   DOMAIN_ERRORS,
   expectGraphqlError,
 } from './helpers/domain-error-assertions.js'
+import { categoryInput } from './helpers/category-test-utils.js'
 import { startSmokeServer, stopSmokeServer } from './helpers/smoke-server.js'
 
 const CREATE_CATEGORY = `
   mutation CreateCategory($data: CreateCategoryInput!) {
-    createCategory(data: $data) { id name userId }
+    createCategory(data: $data) { id name userId icon color }
   }
 `
 
@@ -104,11 +105,12 @@ describe('category HTTP smoke', () => {
 
     const created = (await postGraphql(
       CREATE_CATEGORY,
-      { data: { name: 'Alimentação' } },
+      { data: categoryInput({ name: 'Alimentação', icon: 'shopping-cart', color: 'orange' }) },
       auth.token,
-    )) as { data?: { createCategory: { id: string; name: string } } }
+    )) as { data?: { createCategory: { id: string; name: string; icon: string; color: string } } }
 
     const categoryId = created.data!.createCategory.id
+    expect(created.data?.createCategory.icon).toBe('shopping-cart')
 
     const listed = (await postGraphql(LIST_CATEGORIES, undefined, auth.token)) as {
       data?: { listCategories: unknown[] }
@@ -117,7 +119,7 @@ describe('category HTTP smoke', () => {
 
     const updated = (await postGraphql(
       UPDATE_CATEGORY,
-      { id: categoryId, data: { name: 'Mercado' } },
+      { id: categoryId, data: categoryInput({ name: 'Mercado', icon: 'utensils', color: 'green' }) },
       auth.token,
     )) as { data?: { updateCategory: { name: string } } }
     expect(updated.data?.updateCategory.name).toBe('Mercado')
@@ -134,7 +136,7 @@ describe('category HTTP smoke', () => {
 
     const created = (await postGraphql(
       CREATE_CATEGORY,
-      { data: { name: 'Transporte' } },
+      { data: categoryInput({ name: 'Transporte', icon: 'car-front', color: 'blue' }) },
       owner.token,
     )) as { data?: { createCategory: { id: string } } }
 

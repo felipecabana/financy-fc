@@ -1,13 +1,14 @@
 import { afterEach, describe, expect, it } from 'vitest'
 
+import { prismaClient } from '../prisma/prisma.js'
 import authService from '../src/services/auth.service.js'
 import categoryService from '../src/services/category.service.js'
 import {
   createEmailCleanup,
   signupData,
-  TEST_PASSWORD,
   uniqueEmail,
 } from './helpers/auth-test-utils.js'
+import { categoryInput } from './helpers/category-test-utils.js'
 import {
   DOMAIN_ERROR_CODES,
   DOMAIN_ERRORS,
@@ -32,8 +33,8 @@ describe('category service', () => {
     const userA = await createUser('cat-a')
     const userB = await createUser('cat-b')
 
-    await categoryService.createCategory(userA, { name: 'Alimentação' })
-    await categoryService.createCategory(userB, { name: 'Lazer' })
+    await categoryService.createCategory(userA, categoryInput({ name: 'Alimentação' }))
+    await categoryService.createCategory(userB, categoryInput({ name: 'Lazer' }))
 
     const categories = await categoryService.listCategories(userA)
     expect(categories.map((c) => c.name)).toEqual(['Alimentação'])
@@ -43,7 +44,7 @@ describe('category service', () => {
     const owner = await createUser('cat-owner')
     const other = await createUser('cat-other')
 
-    const category = await categoryService.createCategory(owner, { name: 'Moradia' })
+    const category = await categoryService.createCategory(owner, categoryInput({ name: 'Moradia' }))
     const found = await categoryService.getCategory(owner, category.id)
 
     expect(found.name).toBe('Moradia')
@@ -60,15 +61,47 @@ describe('category service', () => {
     )
   })
 
-  it('createCategory valida nome e faz trim', async () => {
+  it('createCategory valida campos obrigatórios, whitelist e description', async () => {
     const userId = await createUser('cat-create')
 
-    const category = await categoryService.createCategory(userId, { name: '  Educação  ' })
+    const category = await categoryService.createCategory(
+      userId,
+      categoryInput({
+        name: '  Educação  ',
+        description: '  Gastos com estudo  ',
+        icon: 'book-open',
+        color: 'blue',
+      }),
+    )
+
     expect(category.name).toBe('Educação')
+    expect(category.description).toBe('Gastos com estudo')
+    expect(category.icon).toBe('book-open')
+    expect(category.color).toBe('blue')
 
     await expectDomainError(
-      categoryService.createCategory(userId, { name: '' }),
+      categoryService.createCategory(userId, categoryInput({ name: '' })),
       DOMAIN_ERRORS.categoryNameRequired,
+      DOMAIN_ERROR_CODES.UNAUTHORIZED,
+    )
+    await expectDomainError(
+      categoryService.createCategory(userId, categoryInput({ name: 'X', icon: '' })),
+      DOMAIN_ERRORS.categoryIconRequired,
+      DOMAIN_ERROR_CODES.UNAUTHORIZED,
+    )
+    await expectDomainError(
+      categoryService.createCategory(userId, categoryInput({ name: 'X', color: '' })),
+      DOMAIN_ERRORS.categoryColorRequired,
+      DOMAIN_ERROR_CODES.UNAUTHORIZED,
+    )
+    await expectDomainError(
+      categoryService.createCategory(userId, categoryInput({ name: 'X', icon: 'invalid-icon' })),
+      DOMAIN_ERRORS.categoryIconInvalid,
+      DOMAIN_ERROR_CODES.UNAUTHORIZED,
+    )
+    await expectDomainError(
+      categoryService.createCategory(userId, categoryInput({ name: 'X', color: 'cyan' })),
+      DOMAIN_ERRORS.categoryColorInvalid,
       DOMAIN_ERROR_CODES.UNAUTHORIZED,
     )
   })
@@ -77,18 +110,24 @@ describe('category service', () => {
     const owner = await createUser('cat-upd-owner')
     const other = await createUser('cat-upd-other')
 
-    const category = await categoryService.createCategory(owner, { name: 'Viagem' })
-    const updated = await categoryService.updateCategory(owner, category.id, { name: 'Férias' })
+    const category = await categoryService.createCategory(owner, categoryInput({ name: 'Viagem' }))
+    const updated = await categoryService.updateCategory(
+      owner,
+      category.id,
+      categoryInput({ name: 'Férias', icon: 'car-front', color: 'purple' }),
+    )
 
     expect(updated.name).toBe('Férias')
+    expect(updated.icon).toBe('car-front')
+    expect(updated.color).toBe('purple')
 
     await expectDomainError(
-      categoryService.updateCategory(other, category.id, { name: 'X' }),
+      categoryService.updateCategory(other, category.id, categoryInput({ name: 'X' })),
       DOMAIN_ERRORS.noPermission,
       DOMAIN_ERROR_CODES.FORBIDDEN,
     )
     await expectDomainError(
-      categoryService.updateCategory(owner, category.id, { name: '   ' }),
+      categoryService.updateCategory(owner, category.id, categoryInput({ name: '   ' })),
       DOMAIN_ERRORS.categoryNameRequired,
       DOMAIN_ERROR_CODES.UNAUTHORIZED,
     )
@@ -98,7 +137,7 @@ describe('category service', () => {
     const owner = await createUser('cat-del-owner')
     const other = await createUser('cat-del-other')
 
-    const category = await categoryService.createCategory(owner, { name: 'Pets' })
+    const category = await categoryService.createCategory(owner, categoryInput({ name: 'Pets' }))
 
     await expectDomainError(
       categoryService.deleteCategory(other, category.id),
@@ -112,5 +151,17 @@ describe('category service', () => {
       DOMAIN_ERRORS.categoryNotFound,
       DOMAIN_ERROR_CODES.NOT_FOUND,
     )
+  })
+
+  it('lista categoria legada sem ícone e cor', async () => {
+    const userId = await createUser('cat-legacy')
+
+    const legacy = await prismaClient.category.create({
+      data: { name: 'Legada', userId },
+    })
+
+    const found = await categoryService.getCategory(userId, legacy.id)
+    expect(found.icon).toBeNull()
+    expect(found.color).toBeNull()
   })
 })

@@ -19,6 +19,7 @@ import {
   DOMAIN_ERRORS,
   expectGraphqlError,
 } from './helpers/domain-error-assertions.js'
+import { categoryInput } from './helpers/category-test-utils.js'
 
 const LIST_CATEGORIES = `query { listCategories { id name } }`
 
@@ -92,7 +93,9 @@ describe('GraphQL errors (integração com formatError)', () => {
     const owner = await signup('errors-owner')
     const other = await signup('errors-other')
 
-    const created = await asUser(owner.token, CREATE_CATEGORY, { data: { name: 'Saúde' } })
+    const created = await asUser(owner.token, CREATE_CATEGORY, {
+      data: categoryInput({ name: 'Saúde' }),
+    })
     const categoryId = created.data!.createCategory.id
 
     const crossRead = await asUser(other.token, GET_CATEGORY, { id: categoryId })
@@ -121,7 +124,9 @@ describe('GraphQL errors (integração com formatError)', () => {
   it('UNAUTHORIZED: validação de nome vazio em categoria', async () => {
     const auth = await signup('errors-validation')
 
-    const result = await asUser(auth.token, CREATE_CATEGORY, { data: { name: '   ' } })
+    const result = await asUser(auth.token, CREATE_CATEGORY, {
+      data: categoryInput({ name: '   ' }),
+    })
 
     expectGraphqlError(
       result.errors?.[0],

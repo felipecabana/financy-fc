@@ -113,7 +113,7 @@ SQLite via Prisma. Três tabelas na migration inicial:
 
 **User** — `id`, `name`, `email` (único), `password`, `createdAt`, `updatedAt`
 
-**Category** — `id`, `name`, `userId`, timestamps. Ligada ao usuário; se o user for apagado, as categorias somem junto (`onDelete: Cascade`).
+**Category** — `id`, `name`, `description` (opcional), `icon`, `color`, `userId`, timestamps. Ligada ao usuário; se o user for apagado, as categorias somem junto (`onDelete: Cascade`). Ícone e cor são obrigatórios em novas categorias; registros antigos podem tê-los nulos.
 
 **Transaction** — `id`, `title`, `amount`, `type`, `userId`, `categoryId` (opcional), timestamps. Também pertence ao usuário com cascade. A categoria é opcional.
 
@@ -181,9 +181,9 @@ Se um dia frontend e API ficarem em origens separadas sem proxy same-site, aí s
 
 ### CRUD de categorias
 
-O módulo em `graphql/modules/categories/` delega para `category.service.ts`, que persiste via Prisma e filtra tudo pelo `userId` autenticado. Cada usuário só lista, consulta, cria, edita e remove as próprias categorias.
+O módulo em `graphql/modules/categories/` delega para `category.service.ts`, que persiste via Prisma e filtra tudo pelo `userId` autenticado. Cada usuário só lista, consulta, cria, edita e remove as próprias categorias. Criação e edição exigem nome, ícone e cor (valores validados por whitelist em `src/helpers/category-fields.ts`); a descrição é opcional.
 
-Validações e erros em português, por exemplo: `Nome é obrigatório.`, `Categoria não encontrada.`, `Sem permissão para realizar esta ação.`
+Validações e erros em português, por exemplo: `Nome é obrigatório.`, `Ícone é obrigatório.`, `Cor é obrigatória.`, `Ícone inválido.`, `Cor inválida.`, `Categoria não encontrada.`, `Sem permissão para realizar esta ação.`
 
 Testes em `tests/` cobrem service, resolvers, schema GraphQL, mutations in-process e smoke HTTP de categorias.
 
@@ -282,7 +282,7 @@ Exemplo de `createCategory` (cookie ou Bearer):
 curl -X POST http://localhost:4000/graphql \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer SEU_TOKEN_AQUI" \
-  -d '{"query":"mutation { createCategory(data: { name: \"Alimentação\" }) { id name } }"}'
+  -d '{"query":"mutation { createCategory(data: { name: \"Alimentação\", icon: \"utensils\", color: \"green\", description: \"Mercado e refeições\" }) { id name description icon color } }"}'
 ```
 
 Exemplo de `createTransaction`:

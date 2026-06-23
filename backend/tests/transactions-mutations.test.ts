@@ -17,6 +17,7 @@ import {
   DOMAIN_ERRORS,
   expectGraphqlError,
 } from './helpers/domain-error-assertions.js'
+import { categoryInput } from './helpers/category-test-utils.js'
 
 const CREATE_CATEGORY = `
   mutation CreateCategory($data: CreateCategoryInput!) {
@@ -133,7 +134,9 @@ describe('transaction CRUD (GraphQL)', () => {
   it('vincula categoria própria na criação', async () => {
     const auth = await signup('transaction-category')
 
-    const category = await asUser(auth.token, CREATE_CATEGORY, { data: { name: 'Moradia' } })
+    const category = await asUser(auth.token, CREATE_CATEGORY, {
+      data: categoryInput({ name: 'Moradia' }),
+    })
     const categoryId = category.data!.createCategory.id
 
     const created = await asUser(auth.token, CREATE_TRANSACTION, {

@@ -5,6 +5,7 @@ import { NotFoundError } from '../src/errors/NotFoundError.js'
 import { UnauthorizedError } from '../src/errors/UnauthorizedError.js'
 import categoriesResolvers from '../src/graphql/modules/categories/resolvers.js'
 import categoryService from '../src/services/category.service.js'
+import { categoryInput } from './helpers/category-test-utils.js'
 import {
   DOMAIN_ERROR_CODES,
   DOMAIN_ERRORS,
@@ -17,6 +18,9 @@ const categoryId = 'category-456'
 const sampleCategory = {
   id: categoryId,
   name: 'Alimentação',
+  description: 'Mercado',
+  icon: 'utensils',
+  color: 'green',
   userId,
   createdAt: new Date('2026-01-01T12:00:00.000Z'),
   updatedAt: new Date('2026-01-02T12:00:00.000Z'),
@@ -49,15 +53,18 @@ describe('categories resolvers', () => {
     const updateSpy = vi.spyOn(categoryService, 'updateCategory').mockResolvedValue(sampleCategory)
     const deleteSpy = vi.spyOn(categoryService, 'deleteCategory').mockResolvedValue(true)
 
+    const createData = categoryInput({ name: 'Transporte', icon: 'car-front', color: 'blue' })
+    const updateData = categoryInput({ name: 'Moradia', icon: 'house', color: 'purple' })
+
     await categoriesResolvers.Mutation.createCategory(
       null,
-      { data: { name: 'Transporte' } },
+      { data: createData },
       context,
       {} as never,
     )
     await categoriesResolvers.Mutation.updateCategory(
       null,
-      { id: categoryId, data: { name: 'Moradia' } },
+      { id: categoryId, data: updateData },
       context,
       {} as never,
     )
@@ -68,8 +75,8 @@ describe('categories resolvers', () => {
       {} as never,
     )
 
-    expect(createSpy).toHaveBeenCalledWith(userId, { name: 'Transporte' })
-    expect(updateSpy).toHaveBeenCalledWith(userId, categoryId, { name: 'Moradia' })
+    expect(createSpy).toHaveBeenCalledWith(userId, createData)
+    expect(updateSpy).toHaveBeenCalledWith(userId, categoryId, updateData)
     expect(deleteSpy).toHaveBeenCalledWith(userId, categoryId)
   })
 

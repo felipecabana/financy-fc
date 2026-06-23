@@ -14,6 +14,7 @@ import {
   DOMAIN_ERRORS,
   expectDomainError,
 } from './helpers/domain-error-assertions.js'
+import { categoryInput } from './helpers/category-test-utils.js'
 
 describe('transaction service', () => {
   const cleanup = createEmailCleanup()
@@ -105,8 +106,8 @@ describe('transaction service', () => {
     const owner = await createUser('txn-cat-owner')
     const other = await createUser('txn-cat-other')
 
-    const category = await categoryService.createCategory(owner, { name: 'Moradia' })
-    const otherCategory = await categoryService.createCategory(other, { name: 'Lazer' })
+    const category = await categoryService.createCategory(owner, categoryInput({ name: 'Moradia' }))
+    const otherCategory = await categoryService.createCategory(other, categoryInput({ name: 'Lazer' }))
 
     const withCategory = await transactionService.createTransaction(owner, {
       title: 'Aluguel',

@@ -42,6 +42,32 @@ describe('categories GraphQL schema', () => {
     }
 
     const categoryFields = Object.keys(categoryType.getFields()).sort()
-    expect(categoryFields).toEqual(['createdAt', 'id', 'name', 'updatedAt', 'userId'])
+    expect(categoryFields).toEqual([
+      'color',
+      'createdAt',
+      'description',
+      'icon',
+      'id',
+      'name',
+      'updatedAt',
+      'userId',
+    ])
+
+    if (!isInputObjectType(createInput) || !isInputObjectType(updateInput)) {
+      throw new Error('Category inputs not found')
+    }
+
+    expect(Object.keys(createInput.getFields()).sort()).toEqual([
+      'color',
+      'description',
+      'icon',
+      'name',
+    ])
+    expect(Object.keys(updateInput.getFields()).sort()).toEqual([
+      'color',
+      'description',
+      'icon',
+      'name',
+    ])
   })
 })

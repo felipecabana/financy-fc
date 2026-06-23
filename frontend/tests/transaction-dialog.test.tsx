@@ -31,6 +31,7 @@ function mockCreateTransactionFetch() {
             title: body.variables.data.title,
             amount: body.variables.data.amount,
             type: body.variables.data.type,
+            date: body.variables.data.date,
             createdAt: '2026-06-20T00:00:00.000Z',
           },
         },
@@ -128,6 +129,7 @@ describe('TransactionDialog', () => {
       title: 'Almoço',
       amount: 45.9,
       type: 'despesa',
+      date: '2026-06-20',
     })
   })
 })

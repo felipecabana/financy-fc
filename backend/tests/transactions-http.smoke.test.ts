@@ -21,7 +21,7 @@ import { startSmokeServer, stopSmokeServer } from './helpers/smoke-server.js'
 
 const CREATE_TRANSACTION = `
   mutation CreateTransaction($data: CreateTransactionInput!) {
-    createTransaction(data: $data) { id title amount type userId }
+    createTransaction(data: $data) { id title amount type date userId }
   }
 `
 
@@ -29,7 +29,7 @@ const LIST_TRANSACTIONS = `query { listTransactions { id title } }`
 
 const UPDATE_TRANSACTION = `
   mutation UpdateTransaction($id: String!, $data: UpdateTransactionInput!) {
-    updateTransaction(id: $id, data: $data) { title amount }
+    updateTransaction(id: $id, data: $data) { title amount date }
   }
 `
 
@@ -100,20 +100,22 @@ describe('transaction HTTP smoke', () => {
 
     const created = await postGraphql(
       CREATE_TRANSACTION,
-      { data: { title: 'Salário', amount: 5000, type: 'receita' } },
+      { data: { title: 'Salário', amount: 5000, type: 'receita', date: '2026-06-15' } },
       auth.token,
     )
     const transactionId = created.data.createTransaction.id
+    expect(created.data.createTransaction.date).toBe('2026-06-15T00:00:00.000Z')
 
     const listed = await postGraphql(LIST_TRANSACTIONS, undefined, auth.token)
     expect(listed.data.listTransactions).toHaveLength(1)
 
     const updated = await postGraphql(
       UPDATE_TRANSACTION,
-      { id: transactionId, data: { title: 'Salário CLT', amount: 5500 } },
+      { id: transactionId, data: { title: 'Salário CLT', amount: 5500, date: '2026-07-01' } },
       auth.token,
     )
     expect(updated.data.updateTransaction.title).toBe('Salário CLT')
+    expect(updated.data.updateTransaction.date).toBe('2026-07-01T00:00:00.000Z')
 
     const deleted = await postGraphql(DELETE_TRANSACTION, { id: transactionId }, auth.token)
     expect(deleted.data.deleteTransaction).toBe(true)
@@ -125,7 +127,7 @@ describe('transaction HTTP smoke', () => {
 
     const created = await postGraphql(
       CREATE_TRANSACTION,
-      { data: { title: 'Mercado', amount: 180, type: 'despesa' } },
+      { data: { title: 'Mercado', amount: 180, type: 'despesa', date: '2026-06-15' } },
       owner.token,
     )
     const transactionId = created.data.createTransaction.id

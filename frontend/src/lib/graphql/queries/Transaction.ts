@@ -7,6 +7,7 @@ export const LIST_TRANSACTIONS = gql`
       title
       amount
       type
+      date
       userId
       categoryId
       createdAt

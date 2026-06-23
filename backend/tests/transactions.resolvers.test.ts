@@ -23,6 +23,7 @@ const sampleTransaction = {
   type: 'receita',
   userId,
   categoryId: null,
+  date: new Date('2026-06-15T00:00:00.000Z'),
   createdAt: new Date('2026-01-01T12:00:00.000Z'),
   updatedAt: new Date('2026-01-02T12:00:00.000Z'),
 }
@@ -75,7 +76,7 @@ describe('transactions resolvers', () => {
 
     await transactionsResolvers.Mutation.createTransaction(
       null,
-      { data: { title: 'Mercado', amount: 100, type: 'despesa' } },
+      { data: { title: 'Mercado', amount: 100, type: 'despesa', date: '2026-06-15' } },
       context,
       {} as never,
     )
@@ -96,6 +97,7 @@ describe('transactions resolvers', () => {
       title: 'Mercado',
       amount: 100,
       type: 'despesa',
+      date: '2026-06-15',
     })
     expect(updateSpy).toHaveBeenCalledWith(userId, transactionId, { title: 'Feira' })
     expect(deleteSpy).toHaveBeenCalledWith(userId, transactionId)
@@ -135,6 +137,9 @@ describe('transactions resolvers', () => {
   it('Transaction formata datas em ISO e resolve category', async () => {
     expect(transactionsResolvers.Transaction.createdAt(sampleTransaction)).toBe(
       '2026-01-01T12:00:00.000Z',
+    )
+    expect(transactionsResolvers.Transaction.date(sampleTransaction)).toBe(
+      '2026-06-15T00:00:00.000Z',
     )
     expect(transactionsResolvers.Transaction.updatedAt(sampleTransaction)).toBe(
       '2026-01-02T12:00:00.000Z',

@@ -47,6 +47,7 @@ describe('transactions GraphQL schema', () => {
       'category',
       'categoryId',
       'createdAt',
+      'date',
       'id',
       'title',
       'type',

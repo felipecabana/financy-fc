@@ -22,6 +22,8 @@ export const DOMAIN_ERRORS = {
   titleRequired: 'Título é obrigatório.',
   amountRequired: 'Valor é obrigatório.',
   typeRequired: 'Tipo é obrigatório.',
+  dateRequired: 'Data é obrigatória.',
+  dateInvalid: 'Data inválida.',
   unauthenticated: 'Usuário não autenticado.',
 } as const
 

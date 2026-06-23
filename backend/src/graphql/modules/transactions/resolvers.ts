@@ -6,6 +6,7 @@ export interface CreateTransactionInput {
   title: string
   amount: number
   type: string
+  date: string
   categoryId?: string
 }
 
@@ -13,12 +14,14 @@ export interface UpdateTransactionInput {
   title?: string
   amount?: number
   type?: string
+  date?: string
   categoryId?: string
 }
 
 type TransactionParent = {
   userId: string
   categoryId?: string | null
+  date: Date
   createdAt: Date
   updatedAt: Date
 }
@@ -62,6 +65,7 @@ export default {
       return categoryService.getCategory(parent.userId, parent.categoryId)
     },
     createdAt: (parent: TransactionParent) => parent.createdAt.toISOString(),
+    date: (parent: TransactionParent) => parent.date.toISOString(),
     updatedAt: (parent: TransactionParent) => parent.updatedAt.toISOString(),
   },
 }

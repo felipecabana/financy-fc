@@ -3,6 +3,7 @@ type Transaction {
   title: String!
   amount: Float!
   type: String!
+  date: String!
   userId: String!
   categoryId: String
   createdAt: String!
@@ -14,6 +15,7 @@ input CreateTransactionInput {
   title: String!
   amount: Float!
   type: String!
+  date: String!
   categoryId: String
 }
 
@@ -21,6 +23,7 @@ input UpdateTransactionInput {
   title: String
   amount: Float
   type: String
+  date: String
   categoryId: String
 }
 

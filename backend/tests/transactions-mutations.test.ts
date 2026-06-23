@@ -28,7 +28,7 @@ const CREATE_CATEGORY = `
 const CREATE_TRANSACTION = `
   mutation CreateTransaction($data: CreateTransactionInput!) {
     createTransaction(data: $data) {
-      id title amount type userId categoryId
+      id title amount type date userId categoryId
       category { id name }
     }
   }
@@ -48,7 +48,7 @@ const GET_TRANSACTION = `
 
 const UPDATE_TRANSACTION = `
   mutation UpdateTransaction($id: String!, $data: UpdateTransactionInput!) {
-    updateTransaction(id: $id, data: $data) { id title amount type }
+    updateTransaction(id: $id, data: $data) { id title amount type date }
   }
 `
 
@@ -98,13 +98,14 @@ describe('transaction CRUD (GraphQL)', () => {
     const auth = await signup('transaction-crud')
 
     const created = await asUser(auth.token, CREATE_TRANSACTION, {
-      data: { title: 'Salário', amount: 5000, type: 'receita' },
+      data: { title: 'Salário', amount: 5000, type: 'receita', date: '2026-06-15' },
     })
     expect(created.errors).toBeUndefined()
     expect(created.data?.createTransaction).toMatchObject({
       title: 'Salário',
       amount: 5000,
       type: 'receita',
+      date: '2026-06-15T00:00:00.000Z',
       userId: auth.user.id,
       categoryId: null,
       category: null,
@@ -117,11 +118,12 @@ describe('transaction CRUD (GraphQL)', () => {
 
     const updated = await asUser(auth.token, UPDATE_TRANSACTION, {
       id: transactionId,
-      data: { title: 'Salário CLT', amount: 5500 },
+      data: { title: 'Salário CLT', amount: 5500, date: '2026-07-01' },
     })
     expect(updated.data?.updateTransaction).toMatchObject({
       title: 'Salário CLT',
       amount: 5500,
+      date: '2026-07-01T00:00:00.000Z',
     })
 
     const deleted = await asUser(auth.token, DELETE_TRANSACTION, { id: transactionId })
@@ -144,6 +146,7 @@ describe('transaction CRUD (GraphQL)', () => {
         title: 'Aluguel',
         amount: 1200,
         type: 'despesa',
+        date: '2026-06-20',
         categoryId,
       },
     })
@@ -161,7 +164,7 @@ describe('transaction CRUD (GraphQL)', () => {
     const other = await signup('transaction-other')
 
     const created = await asUser(owner.token, CREATE_TRANSACTION, {
-      data: { title: 'Mercado', amount: 200, type: 'despesa' },
+      data: { title: 'Mercado', amount: 200, type: 'despesa', date: '2026-06-15' },
     })
     const transactionId = created.data!.createTransaction.id
 

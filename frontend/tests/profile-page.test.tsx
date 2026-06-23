@@ -44,6 +44,41 @@ describe('Profile page', () => {
     expect(screen.getByLabelText('Avatar').textContent).toBe('MS')
   })
 
+  it('exibe botao Salvar alteracoes', async () => {
+    renderProfileRoute()
+    await waitForSessionBootstrap()
+
+    expect(screen.getByRole('button', { name: 'Salvar alterações' })).toBeTruthy()
+  })
+
+  it('atualiza nome via updateUser e sessao', async () => {
+    const fetchMock = mockAppGraphQLFetch({ me: mockUser })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(
+      <ApolloProvider client={apolloClient}>
+        <MemoryRouter initialEntries={['/profile']}>
+          <App />
+        </MemoryRouter>
+      </ApolloProvider>,
+    )
+    await waitForSessionBootstrap()
+
+    fireEvent.change(screen.getByLabelText('Nome completo'), {
+      target: { value: 'Maria Atualizada' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar alterações' }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Maria Atualizada' })).toBeTruthy()
+      expect(useAuthStore.getState().user?.name).toBe('Maria Atualizada')
+    })
+
+    expect(fetchMock.mock.calls.some(([, init]) => String(init?.body).includes('updateUser'))).toBe(
+      true,
+    )
+  })
+
   it('faz logout via mutation e redireciona para login', async () => {
     const fetchMock = mockAppGraphQLFetch({ me: mockUser })
     vi.stubGlobal('fetch', fetchMock)

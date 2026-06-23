@@ -22,6 +22,7 @@ const expectedMutationFields = [
   'signup',
   'updateCategory',
   'updateTransaction',
+  'updateUser',
 ]
 
 describe('graphql composition', () => {

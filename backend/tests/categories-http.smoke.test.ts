@@ -17,7 +17,7 @@ import {
   DOMAIN_ERRORS,
   expectGraphqlError,
 } from './helpers/domain-error-assertions.js'
-import { categoryInput } from './helpers/category-test-utils.js'
+import { categoryInput, DEFAULT_CATEGORY_COUNT } from './helpers/category-test-utils.js'
 import { startSmokeServer, stopSmokeServer } from './helpers/smoke-server.js'
 
 const CREATE_CATEGORY = `
@@ -115,7 +115,7 @@ describe('category HTTP smoke', () => {
     const listed = (await postGraphql(LIST_CATEGORIES, undefined, auth.token)) as {
       data?: { listCategories: unknown[] }
     }
-    expect(listed.data?.listCategories).toHaveLength(1)
+    expect(listed.data?.listCategories).toHaveLength(DEFAULT_CATEGORY_COUNT + 1)
 
     const updated = (await postGraphql(
       UPDATE_CATEGORY,
@@ -149,7 +149,7 @@ describe('category HTTP smoke', () => {
       other.token,
     )) as { errors?: Array<{ message: string }> }
 
-    expect(otherList.data?.listCategories).toEqual([])
+    expect(otherList.data?.listCategories).toHaveLength(DEFAULT_CATEGORY_COUNT)
     expectGraphqlError(
       crossRead.errors?.[0],
       DOMAIN_ERRORS.noPermission,

@@ -10,7 +10,7 @@ import {
   getApolloSingleResult,
   signupForBearer,
 } from './helpers/auth-test-utils.js'
-import { categoryInput } from './helpers/category-test-utils.js'
+import { categoryInput, DEFAULT_CATEGORY_COUNT } from './helpers/category-test-utils.js'
 import {
   DOMAIN_ERROR_CODES,
   DOMAIN_ERRORS,
@@ -114,7 +114,7 @@ describe('category CRUD (GraphQL)', () => {
     const categoryId = created.data!.createCategory.id
 
     const listed = await asUser(auth.token, LIST_CATEGORIES)
-    expect(listed.data?.listCategories).toHaveLength(1)
+    expect(listed.data?.listCategories).toHaveLength(DEFAULT_CATEGORY_COUNT + 1)
 
     const updated = await asUser(auth.token, UPDATE_CATEGORY, {
       id: categoryId,
@@ -130,7 +130,7 @@ describe('category CRUD (GraphQL)', () => {
     expect(deleted.data?.deleteCategory).toBe(true)
 
     const afterDelete = await asUser(auth.token, LIST_CATEGORIES)
-    expect(afterDelete.data?.listCategories).toEqual([])
+    expect(afterDelete.data?.listCategories).toHaveLength(DEFAULT_CATEGORY_COUNT)
   })
 
   it('rejeita ícone inválido na criação', async () => {
@@ -159,7 +159,7 @@ describe('category CRUD (GraphQL)', () => {
     const otherList = await asUser(other.token, LIST_CATEGORIES)
     const crossRead = await asUser(other.token, GET_CATEGORY, { id: categoryId })
 
-    expect(otherList.data?.listCategories).toEqual([])
+    expect(otherList.data?.listCategories).toHaveLength(DEFAULT_CATEGORY_COUNT)
     expectGraphqlError(
       crossRead.errors?.[0],
       DOMAIN_ERRORS.noPermission,

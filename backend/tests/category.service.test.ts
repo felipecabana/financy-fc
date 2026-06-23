@@ -36,8 +36,12 @@ describe('category service', () => {
     await categoryService.createCategory(userA, categoryInput({ name: 'Alimentação' }))
     await categoryService.createCategory(userB, categoryInput({ name: 'Lazer' }))
 
-    const categories = await categoryService.listCategories(userA)
-    expect(categories.map((c) => c.name)).toEqual(['Alimentação'])
+    const categoriesA = await categoryService.listCategories(userA)
+    const categoriesB = await categoryService.listCategories(userB)
+
+    expect(categoriesA.some((category) => category.name === 'Alimentação')).toBe(true)
+    expect(categoriesA.some((category) => category.name === 'Lazer')).toBe(false)
+    expect(categoriesB.some((category) => category.name === 'Lazer')).toBe(true)
   })
 
   it('getCategory retorna a própria e rejeita inexistente ou de outro usuário', async () => {

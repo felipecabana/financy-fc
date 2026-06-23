@@ -10,6 +10,7 @@ import {
   getApolloSingleResult,
   signupForBearer,
 } from './helpers/auth-test-utils.js'
+import { DEFAULT_CATEGORY_COUNT } from './helpers/category-test-utils.js'
 
 const ME_QUERY = `query { me { id email } }`
 const LIST_CATEGORIES = `query { listCategories { id name } }`
@@ -53,6 +54,6 @@ describe('graphql entrypoint', () => {
       await server.executeOperation({ query: LIST_CATEGORIES }, { contextValue: context }),
     )
     expect(categories.errors).toBeUndefined()
-    expect(categories.data?.listCategories).toEqual([])
+    expect(categories.data?.listCategories).toHaveLength(DEFAULT_CATEGORY_COUNT)
   })
 })

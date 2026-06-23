@@ -101,9 +101,9 @@ describe('CategoryDialog', () => {
 
     expect(screen.getByText('Editar categoria')).toBeTruthy()
     expect(screen.getByLabelText('Título')).toHaveProperty('value', 'Alimentação')
-    expect(screen.getByLabelText('Descrição')).toHaveProperty('value', 'Mercado e refeições')
+    expect(screen.getByLabelText('Descrição')).toHaveProperty('value', 'Restaurantes, delivery e refeições')
     expect(screen.getByRole('button', { name: 'utensils', pressed: true })).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'green', pressed: true })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'blue', pressed: true })).toBeTruthy()
   })
 
   it('exibe erro de validacao ao salvar sem titulo', () => {
@@ -170,7 +170,7 @@ describe('CategoryDialog', () => {
       id: 'cat-a',
       data: {
         name: 'Mercado',
-        description: 'Mercado e refeições',
+        description: 'Restaurantes, delivery e refeições',
         icon: 'shopping-cart',
         color: 'orange',
       },

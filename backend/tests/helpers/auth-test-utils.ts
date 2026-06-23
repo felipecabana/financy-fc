@@ -37,7 +37,19 @@ export const LOGIN_MUTATION = `
 
 export const LOGOUT_MUTATION = `mutation { logout }`
 
-export const ME_QUERY = `query { me { id email } }`
+export const ME_QUERY = `query { me { id name email } }`
+
+export const UPDATE_USER_MUTATION = `
+  mutation UpdateUser($data: UpdateUserInput!) {
+    updateUser(data: $data) {
+      id
+      name
+      email
+      createdAt
+      updatedAt
+    }
+  }
+`
 
 export type PublicUser = {
   id: string

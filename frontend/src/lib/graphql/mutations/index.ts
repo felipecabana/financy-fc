@@ -9,6 +9,11 @@ export {
   type SignupMutationVariables,
 } from './Auth'
 export {
+  UPDATE_USER,
+  type UpdateUserMutationData,
+  type UpdateUserMutationVariables,
+} from './User'
+export {
   CREATE_CATEGORY,
   DELETE_CATEGORY,
   UPDATE_CATEGORY,

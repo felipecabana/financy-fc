@@ -1,6 +1,7 @@
-import { CircleArrowDown, CircleArrowUp, Receipt } from 'lucide-react'
+import { CircleArrowDown, CircleArrowUp, SquarePen, Trash2 } from 'lucide-react'
 import { useSyncExternalStore } from 'react'
 
+import { CategoryIcon } from '@/lib/category-icons'
 import { incomeTagStyle, resolveCategoryTagStyle } from '@/lib/category-styles'
 import { cn } from '@/lib/utils'
 import type { Transaction } from '@/types'
@@ -118,7 +119,7 @@ function PageRow({ transaction, index, onEdit, onDelete }: PageRowProps) {
             rowStyle.icon,
           )}
         >
-          <Receipt className="size-4" />
+          <CategoryIcon icon={transaction.category?.icon} className="size-4" />
         </div>
         <p className="truncate text-base font-medium text-gray-800">{transaction.title}</p>
       </div>
@@ -164,18 +165,20 @@ function PageRow({ transaction, index, onEdit, onDelete }: PageRowProps) {
           <button
             type="button"
             onClick={() => onEdit(transaction.id)}
-            className="text-sm font-medium text-brand-base"
+            aria-label="Editar"
+            className="flex size-8 items-center justify-center rounded-lg border border-gray-300 bg-white"
           >
-            Editar
+            <SquarePen className="size-4 text-gray-700" />
           </button>
         )}
         {onDelete && (
           <button
             type="button"
             onClick={() => onDelete(transaction.id)}
-            className="text-sm font-medium text-brand-base"
+            aria-label="Excluir"
+            className="flex size-8 items-center justify-center rounded-lg border border-gray-300 bg-white"
           >
-            Excluir
+            <Trash2 className="size-4 text-red-base" />
           </button>
         )}
       </div>
@@ -208,7 +211,7 @@ function CompactRow({
           rowStyle.icon,
         )}
       >
-        <Receipt className="size-4" />
+        <CategoryIcon icon={transaction.category?.icon} className="size-4" />
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
@@ -254,23 +257,25 @@ function CompactRow({
             )}
           </div>
           {hasActions && (
-            <div className="flex shrink-0 items-center gap-3">
+            <div className="flex shrink-0 items-center gap-2">
               {onEdit && (
                 <button
                   type="button"
                   onClick={() => onEdit(transaction.id)}
-                  className="text-sm font-medium text-brand-base"
+                  aria-label="Editar"
+                  className="flex size-8 items-center justify-center rounded-lg border border-gray-300 bg-white"
                 >
-                  Editar
+                  <SquarePen className="size-4 text-gray-700" />
                 </button>
               )}
               {onDelete && (
                 <button
                   type="button"
                   onClick={() => onDelete(transaction.id)}
-                  className="text-sm font-medium text-brand-base"
+                  aria-label="Excluir"
+                  className="flex size-8 items-center justify-center rounded-lg border border-gray-300 bg-white"
                 >
-                  Excluir
+                  <Trash2 className="size-4 text-red-base" />
                 </button>
               )}
             </div>
@@ -284,14 +289,53 @@ function CompactRow({
 function DashboardRow({
   transaction,
   index,
-  onDelete,
 }: {
   transaction: Transaction
   index: number
-  onDelete?: (id: string) => void
 }) {
+  const income = isIncome(transaction.type)
+  const rowStyle = getRowStyle(transaction, index)
+
   return (
-    <CompactRow transaction={transaction} index={index} onDelete={onDelete} />
+    <div className="flex h-20 items-center">
+      <div className="flex min-w-0 flex-[3] items-center gap-4 px-6">
+        <div
+          className={cn(
+            'flex size-10 shrink-0 items-center justify-center rounded-lg',
+            rowStyle.icon,
+          )}
+        >
+          <CategoryIcon icon={transaction.category?.icon} className="size-4" />
+        </div>
+        <div className="min-w-0">
+          <p className="truncate text-base font-medium text-gray-800">{transaction.title}</p>
+          <p className="text-sm text-gray-600">{formatDate(transaction.date)}</p>
+        </div>
+      </div>
+
+      <div className="flex flex-[1.2] justify-center px-4">
+        <span
+          className={cn(
+            'rounded-full px-3 py-1 text-sm font-medium',
+            rowStyle.bg,
+            rowStyle.text,
+          )}
+        >
+          {getTagLabel(transaction)}
+        </span>
+      </div>
+
+      <div className="flex flex-[1.2] items-center justify-end gap-1.5 px-6">
+        <span className="text-sm font-semibold text-gray-800 tabular-nums">
+          {formatAmount(transaction)}
+        </span>
+        {income ? (
+          <CircleArrowUp className="size-4 shrink-0 text-green-base" />
+        ) : (
+          <CircleArrowDown className="size-4 shrink-0 text-red-base" />
+        )}
+      </div>
+    </div>
   )
 }
 
@@ -346,15 +390,20 @@ export function TransactionList({
     )
   }
 
+  if (isLargeScreen) {
+    return (
+      <div className="divide-y divide-gray-200">
+        {items.map((transaction, index) => (
+          <DashboardRow key={transaction.id} transaction={transaction} index={index} />
+        ))}
+      </div>
+    )
+  }
+
   return (
     <div className="divide-y divide-gray-200">
       {items.map((transaction, index) => (
-        <DashboardRow
-          key={transaction.id}
-          transaction={transaction}
-          index={index}
-          onDelete={onDelete}
-        />
+        <CompactRow key={transaction.id} transaction={transaction} index={index} />
       ))}
     </div>
   )

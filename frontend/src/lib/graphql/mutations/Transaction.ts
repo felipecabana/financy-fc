@@ -26,6 +26,12 @@ export const UPDATE_TRANSACTION = gql`
   }
 `
 
+export const DELETE_TRANSACTION = gql`
+  mutation DeleteTransaction($id: String!) {
+    deleteTransaction(id: $id)
+  }
+`
+
 export type CreateTransactionMutationData = {
   createTransaction: Pick<Transaction, 'id' | 'title' | 'amount' | 'type' | 'createdAt'>
 }
@@ -41,4 +47,12 @@ export type CreateTransactionMutationVariables = {
 export type UpdateTransactionMutationVariables = {
   id: string
   data: UpdateTransactionInput
+}
+
+export type DeleteTransactionMutationData = {
+  deleteTransaction: boolean
+}
+
+export type DeleteTransactionMutationVariables = {
+  id: string
 }

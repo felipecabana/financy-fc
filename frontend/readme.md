@@ -1,12 +1,12 @@
 # Financy — Frontend
 
-SPA em **React + TypeScript + Vite** que consome a API GraphQL do backend. O **scaffold**, o **cliente Apollo**, o **sistema visual base**, o **estado de autenticação**, o **roteamento com guards**, as **páginas de login e cadastro**, o **dashboard autenticado** e os **dialogs de criação/edição de transações e categorias** já estão configurados. Demais páginas do app ainda não foram implementadas.
+SPA em **React + TypeScript + Vite** que consome a API GraphQL do backend. O **scaffold**, o **cliente Apollo**, o **sistema visual base**, o **estado de autenticação**, o **roteamento com guards**, as **páginas de login e cadastro**, o **dashboard autenticado**, os **dialogs de criação/edição** e os **fluxos de exclusão de transações e categorias** já estão configurados. Demais páginas do app ainda não foram implementadas.
 
 ---
 
 ## Sobre o projeto
 
-O frontend é um app standalone em `frontend/`, separado do backend. A comunicação com o servidor é feita via GraphQL (Apollo Client), conforme o padrão do repositório. O cliente está centralizado e conectado ao app; o fluxo de autenticação, a visualização de dados do dashboard e a criação/edição de transações e categorias pelos modais já estão implementados.
+O frontend é um app standalone em `frontend/`, separado do backend. A comunicação com o servidor é feita via GraphQL (Apollo Client), conforme o padrão do repositório. O fluxo de autenticação, a visualização de dados do dashboard, a criação/edição pelos modais e a exclusão de transações e categorias com confirmação já estão implementados.
 
 **O que está rodando hoje:** Node 20.19+ ou 22.12+, TypeScript strict, React 19, Vite 8, Tailwind CSS, shadcn/ui, Apollo Client, Zustand, react-router-dom, sonner, lucide-react, Vitest e ESLint.
 
@@ -30,8 +30,8 @@ frontend/
 │   │   │   ├── apollo.ts         # Apollo Client centralizado + authLink
 │   │   │   ├── mutations/
 │   │   │   │   ├── Auth.ts       # login e signup
-│   │   │   │   ├── Category.ts   # createCategory e updateCategory
-│   │   │   │   └── Transaction.ts # createTransaction e updateTransaction
+│   │   │   │   ├── Category.ts   # createCategory, updateCategory e deleteCategory
+│   │   │   │   └── Transaction.ts # createTransaction, updateTransaction e deleteTransaction
 │   │   │   └── queries/
 │   │   │       ├── Category.ts   # listCategories
 │   │   │       └── Transaction.ts # listTransactions
@@ -43,7 +43,7 @@ frontend/
 │   │   │   ├── login-schema.ts   # validação Zod
 │   │   │   └── signup-schema.ts
 │   │   ├── Dashboard/
-│   │   │   ├── components/       # listas, cards, seções, TransactionDialog e CategoryDialog
+│   │   │   ├── components/       # listas, cards, seções, dialogs e confirmação de exclusão
 │   │   │   ├── category-schema.ts  # validação Zod do formulário de categoria
 │   │   │   ├── transaction-schema.ts # validação Zod do formulário de transação
 │   │   │   ├── useDashboardData.ts
@@ -108,15 +108,17 @@ Testes em `tests/auth-store.test.ts`, `tests/auth-navigation.test.tsx` e `tests/
 
 Tipos `Category` e `Transaction` em `src/types/index.ts`. Queries `LIST_CATEGORIES` e `LIST_TRANSACTIONS` em `src/lib/graphql/queries/`. O hook `useDashboardData` busca os dados via Apollo apenas com sessão ativa (`skip` quando deslogado) e expõe `refetch` para atualização das listas.
 
-A página `Dashboard` exibe cards de resumo, transações recentes e categorias do usuário logado, com estados de loading, erro e listas vazias. Componentes em `pages/Dashboard/components/` (`SummaryCards`, `TransactionsSection`, `TransactionList`, `CategoriesSection`, `CategoryList`, `TransactionDialog`, `CategoryDialog`).
+A página `Dashboard` exibe cards de resumo, transações recentes e categorias do usuário logado, com estados de loading, erro e listas vazias. Componentes em `pages/Dashboard/components/` (`SummaryCards`, `TransactionsSection`, `TransactionList`, `CategoriesSection`, `CategoryList`, `TransactionDialog`, `CategoryDialog`, `DeleteConfirmDialog`).
 
 O botão **Nova transação** abre o `TransactionDialog` em modo criação. O formulário valida descrição, data, valor, tipo e categoria (opcional) com Zod e envia `createTransaction` ou `updateTransaction` via Apollo, com feedback por toast e atualização da lista após sucesso.
 
 O botão **Nova categoria** abre o `CategoryDialog` em modo criação; cada item da lista de categorias expõe **Editar** para abrir o mesmo modal em modo edição. O formulário valida o título com Zod e envia `createCategory` ou `updateCategory` via Apollo, com feedback por toast e atualização da lista após sucesso.
 
+Cada transação e categoria na lista expõe **Excluir**, que abre o `DeleteConfirmDialog` antes de remover o item. As mutations `deleteTransaction` e `deleteCategory` são chamadas via Apollo, com toast de sucesso ou erro e atualização das listas do dashboard após exclusão bem-sucedida.
+
 Mutations em `src/lib/graphql/mutations/Transaction.ts` e `Category.ts`. Tipos de input em `src/types/index.ts`.
 
-Testes em `tests/dashboard-data.test.tsx` cobrem skip sem sessão, carregamento mockado por usuário, refetch e empty states. Testes em `tests/transaction-dialog.test.tsx` e `tests/category-dialog.test.tsx` cobrem modos create/edit, validação e callback após mutation bem-sucedida.
+Testes em `tests/dashboard-data.test.tsx` cobrem skip sem sessão, carregamento mockado por usuário, refetch e empty states. Testes em `tests/transaction-dialog.test.tsx` e `tests/category-dialog.test.tsx` cobrem modos create/edit, validação e callback após mutation bem-sucedida. Testes em `tests/dashboard-delete.test.tsx` cobrem confirmação, cancelamento, exclusão com refetch e tratamento de erro nos fluxos de delete.
 
 ### App e testes do scaffold
 

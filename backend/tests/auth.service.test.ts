@@ -15,6 +15,8 @@ import {
   expectDomainError,
 } from './helpers/domain-error-assertions.js'
 
+const TEST_NAME = 'Maria Silva'
+
 describe('auth service', () => {
   const cleanup = createEmailCleanup()
 
@@ -26,10 +28,11 @@ describe('auth service', () => {
     const email = uniqueEmail('auth-service')
     cleanup.track(email)
 
-    const result = await authService.signup({ email, password: TEST_PASSWORD })
+    const result = await authService.signup({ name: TEST_NAME, email, password: TEST_PASSWORD })
 
     expect(result.user).toEqual({
       id: expect.any(String),
+      name: TEST_NAME,
       email,
       createdAt: expect.any(String),
       updatedAt: expect.any(String),
@@ -37,6 +40,7 @@ describe('auth service', () => {
     expectValidAuthPayload(result, email)
 
     const stored = await prismaClient.user.findUnique({ where: { email } })
+    expect(stored?.name).toBe(TEST_NAME)
     expect(stored?.password).not.toBe(TEST_PASSWORD)
     await expect(verifyPassword(TEST_PASSWORD, stored!.password)).resolves.toBe(true)
   })
@@ -45,10 +49,10 @@ describe('auth service', () => {
     const email = uniqueEmail('auth-service')
     cleanup.track(email)
 
-    await authService.signup({ email, password: TEST_PASSWORD })
+    await authService.signup({ name: TEST_NAME, email, password: TEST_PASSWORD })
 
     await expectDomainError(
-      authService.signup({ email, password: 'other-password' }),
+      authService.signup({ name: 'Outro Nome', email, password: 'other-password' }),
       DOMAIN_ERRORS.duplicateEmail,
       DOMAIN_ERROR_CODES.FORBIDDEN,
     )
@@ -56,13 +60,18 @@ describe('auth service', () => {
 
   it('signup rejeita campos obrigatórios ausentes', async () => {
     await expectDomainError(
-      authService.signup({ email: '', password: TEST_PASSWORD }),
-      DOMAIN_ERRORS.requiredFields,
+      authService.signup({ name: '', email: 'user@example.com', password: TEST_PASSWORD }),
+      'Nome, email e senha são obrigatórios.',
       DOMAIN_ERROR_CODES.UNAUTHORIZED,
     )
     await expectDomainError(
-      authService.signup({ email: 'user@example.com', password: '' }),
-      DOMAIN_ERRORS.requiredFields,
+      authService.signup({ name: TEST_NAME, email: '', password: TEST_PASSWORD }),
+      'Nome, email e senha são obrigatórios.',
+      DOMAIN_ERROR_CODES.UNAUTHORIZED,
+    )
+    await expectDomainError(
+      authService.signup({ name: TEST_NAME, email: 'user@example.com', password: '' }),
+      'Nome, email e senha são obrigatórios.',
       DOMAIN_ERROR_CODES.UNAUTHORIZED,
     )
   })
@@ -71,17 +80,18 @@ describe('auth service', () => {
     const email = uniqueEmail('auth-service')
     cleanup.track(email)
 
-    await authService.signup({ email, password: TEST_PASSWORD })
+    await authService.signup({ name: TEST_NAME, email, password: TEST_PASSWORD })
     const result = await authService.login({ email, password: TEST_PASSWORD })
 
     expectValidAuthPayload(result, email)
+    expect(result.user.name).toBe(TEST_NAME)
   })
 
   it('login rejeita credenciais inválidas sem revelar se o email existe', async () => {
     const email = uniqueEmail('auth-service')
     cleanup.track(email)
 
-    await authService.signup({ email, password: TEST_PASSWORD })
+    await authService.signup({ name: TEST_NAME, email, password: TEST_PASSWORD })
 
     await expectDomainError(
       authService.login({ email: 'missing@example.com', password: TEST_PASSWORD }),

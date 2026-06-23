@@ -9,6 +9,7 @@ import {
   expectValidAuthPayload,
   LOGIN_MUTATION,
   SIGNUP_MUTATION,
+  signupData,
   TEST_PASSWORD,
   uniqueEmail,
   type LoginResponse,
@@ -93,7 +94,7 @@ describe('auth HTTP smoke', () => {
     cleanup.track(email)
 
     const result = await postGraphql<SignupResponse>(SIGNUP_MUTATION, {
-      data: { email, password: TEST_PASSWORD },
+      data: signupData(email),
     })
 
     expect(result.errors).toBeUndefined()
@@ -105,11 +106,11 @@ describe('auth HTTP smoke', () => {
     cleanup.track(email)
 
     await postGraphql<SignupResponse>(SIGNUP_MUTATION, {
-      data: { email, password: TEST_PASSWORD },
+      data: signupData(email),
     })
 
     const result = await postGraphql<LoginResponse>(LOGIN_MUTATION, {
-      data: { email, password: TEST_PASSWORD },
+      data: signupData(email),
     })
 
     expect(result.errors).toBeUndefined()
@@ -121,11 +122,11 @@ describe('auth HTTP smoke', () => {
     cleanup.track(email)
 
     await postGraphql<SignupResponse>(SIGNUP_MUTATION, {
-      data: { email, password: TEST_PASSWORD },
+      data: signupData(email),
     })
 
     const result = await postGraphql<SignupResponse>(SIGNUP_MUTATION, {
-      data: { email, password: 'other-password' },
+      data: signupData(email, 'other-password'),
     })
 
     expect(result.data?.signup).toBeUndefined()
@@ -141,7 +142,7 @@ describe('auth HTTP smoke', () => {
     cleanup.track(email)
 
     await postGraphql<SignupResponse>(SIGNUP_MUTATION, {
-      data: { email, password: TEST_PASSWORD },
+      data: signupData(email),
     })
 
     const missingEmail = await postGraphql<LoginResponse>(LOGIN_MUTATION, {

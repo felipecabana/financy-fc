@@ -100,7 +100,7 @@ Store `useAuthStore` em `src/stores/auth.ts` (Zustand + persist) guarda `token`,
 
 A rota `/` renderiza `Login` ou `Dashboard` conforme a sessão (`RootPage`), sem redirect. `ProtectedRoute` redireciona rotas autenticadas para `/` quando não há sessão; `GuestRoute` impede acesso a `/signup` quando já logado. A página de cadastro fica em `/signup`, com links entre login e signup.
 
-Formulários de login e cadastro com validação Zod, mutations GraphQL (`login` e `signup`) e criação de sessão via `setSession` após sucesso. Erros de credenciais, e-mail duplicado e falha de conexão são exibidos no formulário.
+Formulários de login e cadastro com validação Zod, mutations GraphQL (`login` e `signup`) e criação de sessão via `setSession` após sucesso. O cadastro envia o nome completo para a API e guarda o campo `name` do usuário na sessão. Erros de credenciais, e-mail duplicado e falha de conexão são exibidos no formulário.
 
 Testes em `tests/auth-store.test.ts`, `tests/auth-navigation.test.tsx` e `tests/auth-forms.test.tsx` cobrem persistência, guards, navegação entre páginas e fluxo dos formulários.
 

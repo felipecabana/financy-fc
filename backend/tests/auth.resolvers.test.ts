@@ -4,6 +4,7 @@ import authResolvers from '../src/graphql/modules/auth/resolvers.js'
 import {
   createEmailCleanup,
   expectValidAuthPayload,
+  signupData,
   TEST_PASSWORD,
   uniqueEmail,
 } from './helpers/auth-test-utils.js'
@@ -26,19 +27,17 @@ describe('auth resolvers', () => {
 
     const result = await authResolvers.Mutation.signup(
       null,
-      { data: { email, password: TEST_PASSWORD } },
+      { data: signupData(email) },
       {},
       {} as never,
     )
 
-    expect(result).toEqual({
-      token: expect.any(String),
-      user: {
-        id: expect.any(String),
-        email,
-        createdAt: expect.any(String),
-        updatedAt: expect.any(String),
-      },
+    expect(result.token).toEqual(expect.any(String))
+    expect(result.user).toMatchObject({
+      id: expect.any(String),
+      email,
+      createdAt: expect.any(String),
+      updatedAt: expect.any(String),
     })
     expectValidAuthPayload(result, email)
   })
@@ -49,7 +48,7 @@ describe('auth resolvers', () => {
 
     await authResolvers.Mutation.signup(
       null,
-      { data: { email, password: TEST_PASSWORD } },
+      { data: signupData(email) },
       {},
       {} as never,
     )
@@ -70,7 +69,7 @@ describe('auth resolvers', () => {
 
     await authResolvers.Mutation.signup(
       null,
-      { data: { email, password: TEST_PASSWORD } },
+      { data: signupData(email) },
       {},
       {} as never,
     )
@@ -78,7 +77,7 @@ describe('auth resolvers', () => {
     await expectDomainError(
       authResolvers.Mutation.signup(
         null,
-        { data: { email, password: 'other-password' } },
+        { data: signupData(email, 'other-password') },
         {},
         {} as never,
       ),

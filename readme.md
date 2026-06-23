@@ -8,7 +8,7 @@ A ideia é simples: cada pessoa controla suas categorias e transações, sem ver
 
 ## Sobre o projeto
 
-**Backend** — GraphQL schema-first com Prisma/SQLite: signup, login, JWT, CRUD de categorias e transações escopado por usuário, erros normalizados com códigos estáveis (`UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`).
+**Backend** — GraphQL schema-first com Prisma/SQLite: signup (com nome completo), login, JWT, CRUD de categorias e transações escopado por usuário, erros normalizados com códigos estáveis (`UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`).
 
 **Frontend** — React + TypeScript + Vite, consumindo o backend só via GraphQL. Por enquanto: estrutura de pastas, tooling e app placeholder.
 

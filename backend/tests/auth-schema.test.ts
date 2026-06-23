@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { buildSchema, isObjectType } from 'graphql'
+import { buildSchema, isInputObjectType, isObjectType } from 'graphql'
 import { describe, expect, it } from 'vitest'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -33,6 +33,14 @@ describe('auth GraphQL schema', () => {
     }
 
     const userFields = Object.keys(userType.getFields()).sort()
-    expect(userFields).toEqual(['createdAt', 'email', 'id', 'updatedAt'])
+    expect(userFields).toEqual(['createdAt', 'email', 'id', 'name', 'updatedAt'])
+
+    const signupInput = schema.getType('SignupInput')
+    expect(isInputObjectType(signupInput)).toBe(true)
+    if (!isInputObjectType(signupInput)) {
+      throw new Error('SignupInput type not found')
+    }
+
+    expect(Object.keys(signupInput.getFields()).sort()).toEqual(['email', 'name', 'password'])
   })
 })

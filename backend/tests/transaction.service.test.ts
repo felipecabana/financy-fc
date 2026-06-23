@@ -5,6 +5,7 @@ import categoryService from '../src/services/category.service.js'
 import transactionService from '../src/services/transaction.service.js'
 import {
   createEmailCleanup,
+  signupData,
   TEST_PASSWORD,
   uniqueEmail,
 } from './helpers/auth-test-utils.js'
@@ -24,7 +25,7 @@ describe('transaction service', () => {
   async function createUser(prefix: string) {
     const email = uniqueEmail(prefix)
     cleanup.track(email)
-    const { user } = await authService.signup({ email, password: TEST_PASSWORD })
+    const { user } = await authService.signup(signupData(email))
     return user.id
   }
 

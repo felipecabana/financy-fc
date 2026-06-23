@@ -7,6 +7,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import {
   createEmailCleanup,
   SIGNUP_MUTATION,
+  signupData,
   TEST_PASSWORD,
   uniqueEmail,
 } from './helpers/auth-test-utils.js'
@@ -107,7 +108,7 @@ describe('transaction HTTP smoke', () => {
     cleanup.track(email)
 
     const result = await postGraphql(SIGNUP_MUTATION, {
-      data: { email, password: TEST_PASSWORD },
+      data: signupData(email),
     })
 
     return result.data.signup

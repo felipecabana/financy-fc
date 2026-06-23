@@ -9,6 +9,7 @@ import {
   createEmailCleanup,
   getApolloSingleResult,
   SIGNUP_MUTATION,
+  signupData,
   TEST_PASSWORD,
   uniqueEmail,
   type AuthPayload,
@@ -50,7 +51,7 @@ describe('graphql entrypoint', () => {
     const signup = getApolloSingleResult(
       await server.executeOperation({
         query: SIGNUP_MUTATION,
-        variables: { data: { email, password: TEST_PASSWORD } },
+        variables: { data: signupData(email) },
       }),
     )
     const auth = signup.data?.signup as AuthPayload

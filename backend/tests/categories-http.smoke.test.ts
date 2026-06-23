@@ -7,6 +7,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import {
   createEmailCleanup,
   SIGNUP_MUTATION,
+  signupData,
   TEST_PASSWORD,
   uniqueEmail,
   type AuthPayload,
@@ -113,7 +114,7 @@ describe('category HTTP smoke', () => {
     cleanup.track(email)
 
     const result = (await postGraphql(SIGNUP_MUTATION, {
-      data: { email, password: TEST_PASSWORD },
+      data: signupData(email),
     })) as SignupResponse
 
     return result.data!.signup as AuthPayload

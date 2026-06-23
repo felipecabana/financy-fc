@@ -25,7 +25,7 @@ function SummaryCard({ label, icon: Icon, iconClassName, loading }: SummaryCardP
       {loading ? (
         <div className="h-8 w-40 animate-pulse rounded-md bg-gray-200" />
       ) : (
-        <p className="text-[28px] leading-8 font-bold text-gray-800">—</p>
+        <p className="text-[32px] leading-8 font-bold text-gray-800">—</p>
       )}
     </Card>
   )

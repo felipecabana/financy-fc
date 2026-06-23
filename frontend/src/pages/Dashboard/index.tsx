@@ -155,8 +155,8 @@ export function Dashboard() {
   }
 
   return (
-    <div className="min-h-full bg-gray-100">
-      <Page className="px-12 py-12">
+    <>
+      <Page>
         {error && (
           <p className="mb-6 text-sm text-danger" role="alert">
             Não foi possível carregar os dados do dashboard.
@@ -222,6 +222,6 @@ export function Dashboard() {
         loading={deletingCategoryLoading}
         onConfirm={confirmDeleteCategory}
       />
-    </div>
+    </>
   )
 }

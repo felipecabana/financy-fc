@@ -81,6 +81,14 @@ describe('CategoryDialog', () => {
     expect(screen.getByLabelText('Título')).toHaveProperty('value', '')
   })
 
+  it('nao exibe campos extras de descricao, icone ou cor', () => {
+    renderDialog(vi.fn())
+
+    expect(screen.queryByLabelText('Descrição')).toBeNull()
+    expect(screen.queryByText('Ícone')).toBeNull()
+    expect(screen.queryByText('Cor')).toBeNull()
+  })
+
   it('modo edit preenche o titulo da categoria', () => {
     renderDialog(vi.fn(), {
       mode: 'edit',

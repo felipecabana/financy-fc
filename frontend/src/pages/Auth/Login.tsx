@@ -52,7 +52,7 @@ export function Login() {
   }
 
   return (
-    <div className="flex min-h-[calc(100svh-3.5rem)] flex-col items-center gap-8 bg-gray-100 px-4 py-12">
+    <div className="flex flex-1 flex-col items-center gap-8 px-4 py-8 sm:px-8 sm:py-10 lg:px-12 lg:py-12">
       <Logo />
       <Card className="w-full max-w-[448px] gap-8 rounded-xl border-gray-200 p-[33px] shadow-none">
         <div className="flex flex-col gap-1 text-center">

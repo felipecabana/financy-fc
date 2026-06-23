@@ -7,9 +7,6 @@ import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -24,6 +21,7 @@ import {
 import type { Category } from '@/types'
 
 import { categorySchema } from '../category-schema'
+import { FormDialogBody, FormDialogHeader } from './FormDialogHeader'
 
 type CategoryDialogProps = {
   open: boolean
@@ -123,28 +121,29 @@ export function CategoryDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="gap-6 rounded-xl border-gray-200 p-[25px] sm:max-w-[448px]">
-        <DialogHeader className="gap-0 text-left">
-          <DialogTitle className="text-base font-semibold text-gray-800">
-            {isEdit ? 'Editar categoria' : 'Nova categoria'}
-          </DialogTitle>
-          <DialogDescription className="text-sm text-gray-600">
-            Organize suas transações com categorias
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent
+        showCloseButton={false}
+        className="gap-6 rounded-xl border-gray-200 p-[25px] shadow-none sm:max-w-[448px]"
+      >
+        <FormDialogHeader
+          title={isEdit ? 'Editar categoria' : 'Nova categoria'}
+          description="Organize suas transações com categorias"
+        />
 
         <form className="flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="category-name">Título</Label>
-            <Input
-              id="category-name"
-              placeholder="Ex. Alimentação"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              disabled={loading}
-              aria-invalid={!!formError}
-            />
-          </div>
+          <FormDialogBody>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="category-name">Título</Label>
+              <Input
+                id="category-name"
+                placeholder="Ex. Alimentação"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                disabled={loading}
+                aria-invalid={!!formError}
+              />
+            </div>
+          </FormDialogBody>
 
           {formError && (
             <p className="text-sm text-destructive" role="alert">

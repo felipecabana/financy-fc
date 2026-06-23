@@ -1,12 +1,12 @@
 # Financy — Frontend
 
-SPA em **React + TypeScript + Vite** que consome a API GraphQL do backend. O **scaffold**, o **cliente Apollo**, o **sistema visual base**, o **estado de autenticação**, o **roteamento com guards**, as **páginas de login e cadastro**, o **dashboard autenticado**, os **dialogs de criação/edição** e os **fluxos de exclusão de transações e categorias** já estão configurados. Demais páginas do app ainda não foram implementadas.
+SPA em **React + TypeScript + Vite** que consome a API GraphQL do backend. O app cobre as seis telas principais — login, cadastro, dashboard, transações, categorias e perfil — com navbar autenticada, rotas protegidas, CRUD completo e modais de criação/edição compartilhados entre as páginas.
 
 ---
 
 ## Sobre o projeto
 
-O frontend é um app standalone em `frontend/`, separado do backend. A comunicação com o servidor é feita via GraphQL (Apollo Client), conforme o padrão do repositório. O fluxo de autenticação, a visualização de dados do dashboard, a criação/edição pelos modais e a exclusão de transações e categorias com confirmação já estão implementados.
+O frontend é um app standalone em `frontend/`, separado do backend. A comunicação com o servidor é feita via GraphQL (Apollo Client), conforme o padrão do repositório. O fluxo cobre autenticação, dashboard, páginas dedicadas de transações e categorias, perfil com logout e exclusão de itens com confirmação.
 
 **O que está rodando hoje:** Node 20.19+ ou 22.12+, TypeScript strict, React 19, Vite 8, Tailwind CSS, shadcn/ui, Apollo Client, Zustand, react-router-dom, sonner, lucide-react, Vitest e ESLint.
 
@@ -44,10 +44,13 @@ frontend/
 │   │   │   └── signup-schema.ts
 │   │   ├── Dashboard/
 │   │   │   ├── components/       # listas, cards, seções, dialogs e confirmação de exclusão
-│   │   │   ├── category-schema.ts  # validação Zod do formulário de categoria
-│   │   │   ├── transaction-schema.ts # validação Zod do formulário de transação
+│   │   │   ├── category-schema.ts
+│   │   │   ├── transaction-schema.ts
 │   │   │   ├── useDashboardData.ts
 │   │   │   └── index.tsx         # exibido em / quando logado
+│   │   ├── Transactions/         # /transactions
+│   │   ├── Categories/           # /categories
+│   │   ├── Profile/              # /profile
 │   │   └── Root/
 │   │       └── index.tsx         # alterna Login e Dashboard conforme sessão
 │   ├── stores/
@@ -58,7 +61,7 @@ frontend/
 │   ├── main.tsx                  # entry point + ApolloProvider + BrowserRouter
 │   ├── index.css                 # tokens e estilos globais (Tailwind)
 │   └── vite-env.d.ts             # tipagem de VITE_BACKEND_URL
-├── tests/                        # scaffold, Apollo, auth, dashboard, dialogs
+├── tests/                        # auth, dashboard, páginas, dialogs e perfil
 │   ├── helpers/
 │   └── setup/
 ├── components.json               # configuração shadcn/ui
@@ -92,13 +95,13 @@ Testes em `tests/apollo.test.ts` cobrem a URL do backend e o transporte HTTP do 
 
 Tailwind CSS v4 com tokens de marca, escala de cinzas e cores de feedback em `src/index.css`. shadcn/ui inicializado com primitivos em `src/components/ui/` (button, input, label, dialog, card). Utilitário `cn()` em `src/lib/utils.ts` com `clsx` e `tailwind-merge`. Fonte Inter carregada via Google Fonts.
 
-Shell de layout em `Layout`, `Page` e `Header`, com notificações via `Toaster` (sonner). Ícones com `lucide-react`.
+Shell de layout em `Layout`, `Page` e `Header`, com notificações via `Toaster` (sonner). O `main` preenche a altura da viewport (`100svh`) com fundo cinza em todas as rotas. Padding responsivo no header e nas páginas. Ícones com `lucide-react`.
 
 ### Autenticação e roteamento
 
 Store `useAuthStore` em `src/stores/auth.ts` (Zustand + persist) guarda `token`, `user` e `isAuthenticated`, com reidratação do `localStorage` e `logout` que limpa o cache do Apollo. O `authLink` lê o token via `useAuthStore.getState().token`.
 
-A rota `/` renderiza `Login` ou `Dashboard` conforme a sessão (`RootPage`), sem redirect. `ProtectedRoute` redireciona rotas autenticadas para `/` quando não há sessão; `GuestRoute` impede acesso a `/signup` quando já logado. A página de cadastro fica em `/signup`, com links entre login e signup.
+A rota `/` renderiza `Login` ou `Dashboard` conforme a sessão (`RootPage`), sem redirect. Rotas protegidas em `/transactions`, `/categories` e `/profile`; cadastro em `/signup` com `GuestRoute`. O `Header` exibe navbar com links para Dashboard, Transações e Categorias, além do avatar que leva ao perfil; em páginas de visitante, só o logo é mostrado.
 
 Formulários de login e cadastro com validação Zod, mutations GraphQL (`login` e `signup`) e criação de sessão via `setSession` após sucesso. O cadastro envia o nome completo para a API e guarda o campo `name` do usuário na sessão. Erros de credenciais, e-mail duplicado e falha de conexão são exibidos no formulário.
 
@@ -119,6 +122,18 @@ Cada transação e categoria na lista expõe **Excluir**, que abre o `DeleteConf
 Mutations em `src/lib/graphql/mutations/Transaction.ts` e `Category.ts`. Tipos de input em `src/types/index.ts`.
 
 Testes em `tests/dashboard-data.test.tsx` cobrem skip sem sessão, carregamento mockado por usuário, refetch e empty states. Testes em `tests/transaction-dialog.test.tsx` e `tests/category-dialog.test.tsx` cobrem modos create/edit, validação e callback após mutation bem-sucedida. Testes em `tests/dashboard-delete.test.tsx` cobrem confirmação, cancelamento, exclusão com refetch e tratamento de erro nos fluxos de delete.
+
+### Páginas dedicadas e perfil
+
+As rotas `/transactions` e `/categories` reutilizam `TransactionList`, `CategoryList`, os dialogs e `useDashboardData` para CRUD completo fora do dashboard. Em telas menores que 1024px, a lista de transações usa layout compacto em cards; em telas largas, mantém a tabela com todas as colunas.
+
+A rota `/profile` exibe nome, e-mail e iniciais da sessão, com campos somente leitura e botão **Sair da conta** que chama `logout()` e redireciona para o login.
+
+Os modais `TransactionDialog` e `CategoryDialog` compartilham o cabeçalho visual `FormDialogHeader` (título, subtítulo e botão fechar). O modelo de categoria permanece apenas com o campo título.
+
+As listas compactas do dashboard foram ajustadas para mobile, evitando sobreposição de colunas em cards estreitos.
+
+Testes em `tests/transactions-page.test.tsx`, `tests/categories-page.test.tsx` e `tests/profile-page.test.tsx` cobrem CRUD nas páginas dedicadas e logout no perfil.
 
 ### App e testes do scaffold
 

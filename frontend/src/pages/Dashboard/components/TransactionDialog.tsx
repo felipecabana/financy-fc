@@ -8,9 +8,6 @@ import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -29,6 +26,7 @@ import {
   transactionSchema,
   type TransactionFormValues,
 } from '../transaction-schema'
+import { FormDialogBody, FormDialogHeader } from './FormDialogHeader'
 
 type TransactionType = TransactionFormValues['type']
 
@@ -175,18 +173,17 @@ export function TransactionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="gap-6 rounded-xl border-gray-200 p-[25px] sm:max-w-[448px]">
-        <DialogHeader className="gap-0 text-left">
-          <DialogTitle className="text-base font-semibold text-gray-800">
-            {isEdit ? 'Editar transação' : 'Nova transação'}
-          </DialogTitle>
-          <DialogDescription className="text-sm text-gray-600">
-            Registre sua despesa ou receita
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent
+        showCloseButton={false}
+        className="gap-6 rounded-xl border-gray-200 p-[25px] shadow-none sm:max-w-[448px]"
+      >
+        <FormDialogHeader
+          title={isEdit ? 'Editar transação' : 'Nova transação'}
+          description="Registre sua despesa ou receita"
+        />
 
         <div className="rounded-xl border border-gray-200 p-2">
-          <div className="grid grid-cols-2 gap-0">
+          <div className="grid grid-cols-2">
             <button
               type="button"
               disabled={loading}
@@ -219,6 +216,7 @@ export function TransactionDialog({
         </div>
 
         <form className="flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
+          <FormDialogBody>
           <div className="flex flex-col gap-2">
             <Label htmlFor="transaction-title">Descrição</Label>
             <Input
@@ -231,7 +229,7 @@ export function TransactionDialog({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-2">
               <Label htmlFor="transaction-date">Data</Label>
               <Input
@@ -293,6 +291,7 @@ export function TransactionDialog({
               />
             </div>
           </div>
+          </FormDialogBody>
 
           {formError && (
             <p className="text-sm text-destructive" role="alert">

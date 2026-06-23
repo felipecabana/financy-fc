@@ -3,7 +3,10 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 
 import { Layout } from '@/components/Layout'
 import { Signup } from '@/pages/Auth/Signup'
+import { Categories } from '@/pages/Categories'
+import { Profile } from '@/pages/Profile'
 import { RootPage } from '@/pages/Root'
+import { Transactions } from '@/pages/Transactions'
 import { useAuthStore } from '@/stores/auth'
 
 export function ProtectedRoute({ children }: { children: ReactNode }) {
@@ -27,6 +30,30 @@ export function App() {
             <GuestRoute>
               <Signup />
             </GuestRoute>
+          }
+        />
+        <Route
+          path="/transactions"
+          element={
+            <ProtectedRoute>
+              <Transactions />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/categories"
+          element={
+            <ProtectedRoute>
+              <Categories />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
           }
         />
       </Routes>

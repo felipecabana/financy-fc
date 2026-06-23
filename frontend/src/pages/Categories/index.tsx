@@ -1,6 +1,8 @@
+import type { ReactNode } from 'react'
 import { useMutation } from '@apollo/client/react'
 import { LinkError } from '@apollo/client/errors'
 import { ArrowUpDown, LayoutGrid, Tag } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -12,6 +14,7 @@ import {
   type DeleteCategoryMutationData,
   type DeleteCategoryMutationVariables,
 } from '@/lib/graphql/mutations'
+import { CategoryIcon } from '@/lib/category-icons'
 import { CategoryDialog } from '@/pages/Dashboard/components/CategoryDialog'
 import { CategoryList, type CategoryListRow } from '@/pages/Dashboard/components/CategoryList'
 import { DeleteConfirmDialog } from '@/pages/Dashboard/components/DeleteConfirmDialog'
@@ -42,24 +45,29 @@ function buildCategoryRows(categories: Category[], transactions: Transaction[]):
 }
 
 function getMostUsedCategory(rows: CategoryListRow[]) {
-  if (rows.length === 0) return '—'
+  if (rows.length === 0) return null
 
   const top = rows.reduce((best, row) => (row.itemCount > best.itemCount ? row : best), rows[0]!)
-  return top.itemCount > 0 ? top.name : '—'
+  return top.itemCount > 0 ? top : null
 }
 
 type SummaryStatProps = {
   label: string
   value: string
-  icon: typeof LayoutGrid
+  icon: LucideIcon
+  iconNode?: ReactNode
   loading: boolean
 }
 
-function SummaryStat({ label, value, icon: Icon, loading }: SummaryStatProps) {
+function SummaryStat({ label, value, icon: Icon, iconNode, loading }: SummaryStatProps) {
   return (
     <Card className="gap-4 rounded-xl p-6 shadow-none">
       <div className="flex items-center gap-4">
-        <Icon className="size-6 shrink-0 text-gray-600" />
+        {iconNode ?? (
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-gray-100">
+            <Icon className="size-6 text-gray-600" />
+          </div>
+        )}
         <div className="min-w-0">
           {loading ? (
             <div className="h-8 w-24 animate-pulse rounded-md bg-gray-200" />
@@ -177,8 +185,16 @@ export function Categories() {
           />
           <SummaryStat
             label="categoria mais utilizada"
-            value={mostUsedCategory}
+            value={mostUsedCategory?.name ?? '—'}
             icon={Tag}
+            iconNode={
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-gray-100">
+                <CategoryIcon
+                  icon={mostUsedCategory?.icon}
+                  className="size-6 text-gray-600"
+                />
+              </div>
+            }
             loading={loading}
           />
         </div>

@@ -35,7 +35,8 @@ backend/
 │   ├── services/
 │   │   ├── auth.service.ts   # signup e login
 │   │   ├── category.service.ts
-│   │   └── transaction.service.ts
+│   │   ├── transaction.service.ts
+│   │   └── user.service.ts   # consulta e atualização do perfil
 │   ├── helpers/
 │   │   ├── password.ts       # hash e verificação de senha
 │   │   ├── jwt.ts            # criação e validação de token
@@ -99,6 +100,7 @@ type Mutation {
   createTransaction(data: CreateTransactionInput!): Transaction!
   updateTransaction(id: String!, data: UpdateTransactionInput!): Transaction!
   deleteTransaction(id: String!): Boolean!
+  updateUser(data: UpdateUserInput!): User!
 }
 ```
 
@@ -167,7 +169,7 @@ Cada request GraphQL recebe um contexto com `validate()` e `res`, montado em `sr
 - valida o JWT com o helper existente
 - retorna o `userId` autenticado ou lança `UnauthorizedError` (`Usuário não autenticado.`)
 
-O resolver `me` em `graphql/modules/users/` usa esse fluxo para buscar o usuário atual no Prisma. `signup`, `login` e `logout` continuam acessíveis sem sessão prévia.
+O resolver `me` em `graphql/modules/users/` usa esse fluxo para buscar o usuário atual no Prisma. A mutation `updateUser` permite ao usuário autenticado alterar o nome; o e-mail não é editável. O serviço em `user.service.ts` valida o nome e persiste a alteração. `signup`, `login` e `logout` continuam acessíveis sem sessão prévia.
 
 ### Cookie de sessão e CSRF
 

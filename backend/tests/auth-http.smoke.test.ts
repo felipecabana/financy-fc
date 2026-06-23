@@ -13,6 +13,7 @@ import {
   LOGIN_MUTATION,
   LOGOUT_MUTATION,
   ME_QUERY,
+  UPDATE_USER_MUTATION,
   readSessionCookieHeader,
   SIGNUP_MUTATION,
   signupData,
@@ -165,6 +166,34 @@ describe('auth HTTP smoke', () => {
 
     expect(meResult.errors).toBeUndefined()
     expect(meResult.data?.me.email).toBe(email)
+  })
+
+  it('updateUser altera nome e me reflete a mudança', async () => {
+    const email = uniqueEmail('http-smoke')
+    cleanup.track(email)
+
+    const { headers: signupHeaders } = await postGraphql<SignupResponse>(SIGNUP_MUTATION, {
+      data: signupData(email),
+    })
+    const cookieHeader = readSessionCookieHeader(signupHeaders)
+
+    const { body: updateResult } = await postGraphql<{
+      data?: { updateUser: { name: string; email: string } }
+    }>(
+      UPDATE_USER_MUTATION,
+      { data: { name: 'Conta Atualizada' } },
+      cookieHeader,
+    )
+
+    expect(updateResult.errors).toBeUndefined()
+    expect(updateResult.data?.updateUser.name).toBe('Conta Atualizada')
+    expect(updateResult.data?.updateUser.email).toBe(email)
+
+    const { body: meResult } = await postGraphql<{
+      data?: { me: { name: string; email: string } }
+    }>(ME_QUERY, undefined, cookieHeader)
+
+    expect(meResult.data?.me.name).toBe('Conta Atualizada')
   })
 
   it('logout limpa cookie de sessão', async () => {

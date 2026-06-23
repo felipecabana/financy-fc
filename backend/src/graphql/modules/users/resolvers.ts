@@ -1,24 +1,25 @@
 import type { GraphqlContext } from '../../../config/context/index.js'
-import { NotFoundError } from '../../../errors/NotFoundError.js'
-import { prismaClient } from '../../../../prisma/prisma.js'
+import userService from '../../../services/user.service.js'
+
+export interface UpdateUserInput {
+  name: string
+}
 
 export default {
   Query: {
     me: async (_: unknown, __: unknown, context: GraphqlContext) => {
       const userId = context.validate()
-      const user = await prismaClient.user.findUnique({ where: { id: userId } })
-
-      if (!user) {
-        throw new NotFoundError('Usuário')
-      }
-
-      return {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        createdAt: user.createdAt.toISOString(),
-        updatedAt: user.updatedAt.toISOString(),
-      }
+      return userService.getUser(userId)
+    },
+  },
+  Mutation: {
+    updateUser: async (
+      _: unknown,
+      { data }: { data: UpdateUserInput },
+      context: GraphqlContext,
+    ) => {
+      const userId = context.validate()
+      return userService.updateUser(userId, data)
     },
   },
 }

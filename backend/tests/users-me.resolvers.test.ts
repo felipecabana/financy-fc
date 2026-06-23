@@ -64,4 +64,37 @@ describe('users me resolver', () => {
       DOMAIN_ERROR_CODES.UNAUTHORIZED,
     )
   })
+
+  it('updateUser atualiza o nome do usuário autenticado', async () => {
+    const email = uniqueEmail('update')
+    cleanup.track(email)
+
+    const res = { cookie: vi.fn() } as unknown as Response
+    const signup = await authResolvers.Mutation.signup(
+      null,
+      { data: signupData(email) },
+      { res, validate: () => '' },
+      {} as never,
+    )
+
+    const token = res.cookie.mock.calls[0]?.[1] as string
+    const context = await buildContext({
+      req: mockRequest(`Bearer ${token}`),
+    })
+
+    const updated = await usersResolvers.Mutation.updateUser(
+      null,
+      { data: { name: 'Nome Atualizado' } },
+      context,
+      {} as never,
+    )
+
+    expect(updated).toEqual({
+      id: signup.user.id,
+      name: 'Nome Atualizado',
+      email,
+      createdAt: expect.any(String),
+      updatedAt: expect.any(String),
+    })
+  })
 })

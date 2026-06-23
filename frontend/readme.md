@@ -26,12 +26,14 @@ frontend/
 │   │   ├── StyleGuidePreview.tsx # preview dos primitivos visuais
 │   │   └── ui/                   # shadcn/ui (button, input, label, dialog, card)
 │   ├── lib/
+│   │   ├── category-icons.tsx    # ícones de categoria compartilhados (CategoryIcon)
 │   │   ├── graphql/
 │   │   │   ├── apollo.ts         # Apollo Client centralizado (HttpLink + credentials)
 │   │   │   ├── mutations/
 │   │   │   │   ├── Auth.ts       # login, signup e logout
 │   │   │   │   ├── Category.ts   # createCategory, updateCategory e deleteCategory
-│   │   │   │   └── Transaction.ts # createTransaction, updateTransaction e deleteTransaction
+│   │   │   │   ├── Transaction.ts # createTransaction, updateTransaction e deleteTransaction
+│   │   │   │   └── User.ts       # updateUser
 │   │   │   └── queries/
 │   │   │       ├── Category.ts   # listCategories
 │   │   │       ├── Transaction.ts # listTransactions
@@ -116,29 +118,35 @@ Tipos `Category` e `Transaction` em `src/types/index.ts`. Queries `LIST_CATEGORI
 
 A página `Dashboard` exibe cards de resumo com saldo total, receitas e despesas do mês (calculados a partir das transações), transações recentes e categorias do usuário logado, com estados de loading, erro e listas vazias. Componentes em `pages/Dashboard/components/` (`SummaryCards`, `TransactionsSection`, `TransactionList`, `CategoriesSection`, `CategoryList`, `TransactionDialog`, `CategoryDialog`, `DeleteConfirmDialog`).
 
+No dashboard, as listas são somente leitura: transações em três colunas em telas largas (sem ações de editar ou excluir) e categorias em linha única compacta. A criação de itens continua pelos botões **Nova transação** e **Nova categoria**, que abrem os respectivos dialogs.
+
+O utilitário `CategoryIcon` em `src/lib/category-icons.tsx` centraliza o mapeamento de ícones de categoria e é reutilizado nas listas de transações e categorias, inclusive no card de categoria mais utilizada na página dedicada.
+
 O botão **Nova transação** abre o `TransactionDialog` em modo criação. O formulário valida descrição, data, valor, tipo e categoria (opcional) com Zod e envia `createTransaction` ou `updateTransaction` via Apollo — incluindo a data da movimentação — com feedback por toast e atualização da lista após sucesso. A `TransactionList` ordena e exibe essa data no dashboard e na página de transações.
 
-O botão **Nova categoria** abre o `CategoryDialog` em modo criação; cada item da lista de categorias expõe **Editar** para abrir o mesmo modal em modo edição. O formulário valida título, ícone e cor (obrigatórios) e descrição (opcional) com Zod e envia `createCategory` ou `updateCategory` via Apollo, com feedback por toast e atualização da lista após sucesso. A `CategoryList` exibe ícone, cor e descrição nas páginas dedicadas; no dashboard, mantém o layout compacto com totais por categoria.
+O botão **Nova categoria** abre o `CategoryDialog` em modo criação; na página de categorias, cada item expõe **Editar** antes de **Excluir**. O formulário valida título, ícone e cor (obrigatórios) e descrição (opcional) com Zod e envia `createCategory` ou `updateCategory` via Apollo, com feedback por toast e atualização da lista após sucesso. A `CategoryList` exibe ícone, cor e descrição nas páginas dedicadas; no dashboard, mantém o layout compacto com totais por categoria, sem ações inline.
 
 As etiquetas de categoria nas transações usam a cor vinculada à categoria (`category-styles.ts`), não a posição da linha na lista.
 
-Cada transação e categoria na lista expõe **Excluir**, que abre o `DeleteConfirmDialog` antes de remover o item. As mutations `deleteTransaction` e `deleteCategory` são chamadas via Apollo, com toast de sucesso ou erro e atualização das listas do dashboard após exclusão bem-sucedida.
+Cada transação e categoria na lista expõe **Excluir**, que abre o `DeleteConfirmDialog` antes de remover o item — nas páginas dedicadas de transações e categorias. As mutations `deleteTransaction` e `deleteCategory` são chamadas via Apollo, com toast de sucesso ou erro e atualização das listas após exclusão bem-sucedida.
+
+Na página de transações, **Editar** e **Excluir** aparecem como botões de ícone (32×32), com editar antes de excluir.
 
 Mutations em `src/lib/graphql/mutations/Transaction.ts` e `Category.ts`. Tipos de input em `src/types/index.ts`.
 
-Testes em `tests/dashboard-data.test.tsx` cobrem skip sem sessão, carregamento mockado por usuário, refetch e empty states. Testes em `tests/transaction-dialog.test.tsx` e `tests/category-dialog.test.tsx` cobrem modos create/edit, validação (incluindo ícone e cor), payload das mutations e callback após sucesso. Testes em `tests/dashboard-delete.test.tsx` cobrem confirmação, cancelamento, exclusão com refetch e tratamento de erro nos fluxos de delete.
+Testes em `tests/dashboard-data.test.tsx` cobrem skip sem sessão, carregamento mockado por usuário, refetch e empty states. Testes em `tests/transaction-dialog.test.tsx` e `tests/category-dialog.test.tsx` cobrem modos create/edit, validação (incluindo ícone e cor), payload das mutations e callback após sucesso.
 
 ### Páginas dedicadas e perfil
 
 As rotas `/transactions` e `/categories` reutilizam `TransactionList`, `CategoryList`, os dialogs e `useDashboardData` para CRUD completo fora do dashboard. A página de transações inclui filtros por busca, tipo, categoria e período, com paginação local (10 itens por página). Em telas menores que 1024px, a lista de transações usa layout compacto em cards; em telas largas, mantém a tabela com todas as colunas.
 
-A rota `/profile` exibe nome, e-mail e iniciais da sessão, com campos somente leitura e botão **Sair da conta** que chama a mutation `logout` no servidor, limpa a sessão local e redireciona para o login.
+A rota `/profile` exibe nome, e-mail e iniciais da sessão. O nome completo é editável; o botão **Salvar alterações** chama a mutation `updateUser` e atualiza a sessão local. O e-mail permanece somente leitura. O botão **Sair da conta** chama a mutation `logout` no servidor, limpa a sessão local e redireciona para o login, com destaque visual em vermelho.
 
 Os modais `TransactionDialog` e `CategoryDialog` compartilham o cabeçalho visual `FormDialogHeader` (título, subtítulo e botão fechar).
 
 As listas compactas do dashboard foram ajustadas para mobile, evitando sobreposição de colunas em cards estreitos.
 
-Testes em `tests/transactions-page.test.tsx`, `tests/categories-page.test.tsx`, `tests/transaction-filters.test.tsx`, `tests/category-styles.test.tsx`, `tests/compute-transaction-summary.test.ts` e `tests/profile-page.test.tsx` cobrem CRUD nas páginas dedicadas, filtros de transações, estilos de categoria e logout no perfil.
+Testes em `tests/transactions-page.test.tsx`, `tests/categories-page.test.tsx`, `tests/transaction-filters.test.tsx`, `tests/category-styles.test.tsx`, `tests/compute-transaction-summary.test.ts` e `tests/profile-page.test.tsx` cobrem CRUD nas páginas dedicadas, filtros de transações, estilos de categoria, edição de nome no perfil e logout.
 
 ### App e testes do scaffold
 

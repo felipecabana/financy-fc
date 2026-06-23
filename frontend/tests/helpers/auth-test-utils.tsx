@@ -42,8 +42,15 @@ export function mockAppGraphQLFetch(options: AppGraphQLMockOptions = {}) {
   return vi.fn().mockImplementation(async (_url, init) => {
     const body = JSON.parse(String(init?.body ?? '{}'))
     const query = body.query as string
+    const operationName = body.operationName as string | undefined
 
-    if (query.includes('me')) {
+    if (operationName === 'UpdateUser' || query.includes('updateUser(')) {
+      const updatedName = body.variables?.data?.name as string
+      const updatedUser = me ? { ...me, name: updatedName } : { ...mockUser, name: updatedName }
+      return jsonResponse({ data: { updateUser: updatedUser } })
+    }
+
+    if (operationName === 'Me' || /\bme\s*\{/.test(query)) {
       if (me) {
         return jsonResponse({ data: { me } })
       }

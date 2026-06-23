@@ -1,24 +1,5 @@
 import { useMutation } from '@apollo/client/react'
 import { LinkError } from '@apollo/client/errors'
-import {
-  BaggageClaim,
-  BookOpen,
-  BriefcaseBusiness,
-  CarFront,
-  Dumbbell,
-  Gift,
-  HeartPulse,
-  House,
-  Mailbox,
-  PawPrint,
-  PiggyBank,
-  ReceiptText,
-  ShoppingCart,
-  Ticket,
-  ToolCase,
-  Utensils,
-  type LucideIcon,
-} from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -37,6 +18,7 @@ import {
   type UpdateCategoryMutationData,
   type UpdateCategoryMutationVariables,
 } from '@/lib/graphql/mutations'
+import { categoryIconOptions } from '@/lib/category-icons'
 import { cn } from '@/lib/utils'
 import type { Category } from '@/types'
 
@@ -53,25 +35,6 @@ type CategoryDialogProps = {
 
 type CategoryColor = (typeof categoryColors)[number]
 type CategoryIcon = (typeof categoryIcons)[number]
-
-const iconOptions: { id: CategoryIcon; Icon: LucideIcon }[] = [
-  { id: 'briefcase-business', Icon: BriefcaseBusiness },
-  { id: 'car-front', Icon: CarFront },
-  { id: 'heart-pulse', Icon: HeartPulse },
-  { id: 'piggy-bank', Icon: PiggyBank },
-  { id: 'shopping-cart', Icon: ShoppingCart },
-  { id: 'ticket', Icon: Ticket },
-  { id: 'tool-case', Icon: ToolCase },
-  { id: 'utensils', Icon: Utensils },
-  { id: 'paw-print', Icon: PawPrint },
-  { id: 'house', Icon: House },
-  { id: 'gift', Icon: Gift },
-  { id: 'dumbbell', Icon: Dumbbell },
-  { id: 'book-open', Icon: BookOpen },
-  { id: 'baggage-claim', Icon: BaggageClaim },
-  { id: 'mailbox', Icon: Mailbox },
-  { id: 'receipt-text', Icon: ReceiptText },
-]
 
 const colorOptions: { id: CategoryColor; className: string }[] = [
   { id: 'green', className: 'bg-green-base' },
@@ -254,7 +217,7 @@ export function CategoryDialog({
             <div className="flex flex-col gap-2">
               <span className="text-sm font-medium text-gray-700">Ícone</span>
               <div className="flex flex-wrap gap-2">
-                {iconOptions.map(({ id, Icon }) => {
+                {categoryIconOptions.map(({ id, Icon }) => {
                   const selected = icon === id
 
                   return (

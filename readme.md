@@ -8,9 +8,9 @@ A ideia é simples: cada pessoa controla suas categorias e transações, sem ver
 
 ## Sobre o projeto
 
-**Backend** — GraphQL schema-first com Prisma/SQLite: signup (com nome completo), login, cookie HttpOnly de sessão, CRUD de categorias e transações escopado por usuário, erros normalizados com códigos estáveis (`UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`).
+**Backend** — GraphQL schema-first com Prisma/SQLite: signup (com nome completo), login, cookie HttpOnly de sessão, CRUD de categorias (com descrição, ícone e cor) e transações escopado por usuário, erros normalizados com códigos estáveis (`UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`).
 
-**Frontend** — React + TypeScript + Vite, consumindo o backend via GraphQL com `credentials: 'include'`. Login, cadastro, dashboard, transações, categorias e perfil integrados; sessão restaurada pela query `me` ao recarregar a página.
+**Frontend** — React + TypeScript + Vite, consumindo o backend via GraphQL com `credentials: 'include'`. Login, cadastro, dashboard, transações, categorias e perfil integrados; sessão restaurada pela query `me` ao recarregar a página. Categorias exibem ícone e cor nas listas e no formulário de criação/edição.
 
 ---
 

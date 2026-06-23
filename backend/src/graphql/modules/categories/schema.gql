@@ -1,6 +1,9 @@
 type Category {
   id: String!
   name: String!
+  description: String
+  icon: String
+  color: String
   userId: String!
   createdAt: String!
   updatedAt: String!
@@ -8,10 +11,16 @@ type Category {
 
 input CreateCategoryInput {
   name: String!
+  icon: String!
+  color: String!
+  description: String
 }
 
 input UpdateCategoryInput {
-  name: String
+  name: String!
+  icon: String!
+  color: String!
+  description: String
 }
 
 extend type Query {

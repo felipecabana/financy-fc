@@ -118,13 +118,13 @@ A página `Dashboard` exibe cards de resumo, transações recentes e categorias 
 
 O botão **Nova transação** abre o `TransactionDialog` em modo criação. O formulário valida descrição, data, valor, tipo e categoria (opcional) com Zod e envia `createTransaction` ou `updateTransaction` via Apollo, com feedback por toast e atualização da lista após sucesso.
 
-O botão **Nova categoria** abre o `CategoryDialog` em modo criação; cada item da lista de categorias expõe **Editar** para abrir o mesmo modal em modo edição. O formulário valida o título com Zod e envia `createCategory` ou `updateCategory` via Apollo, com feedback por toast e atualização da lista após sucesso.
+O botão **Nova categoria** abre o `CategoryDialog` em modo criação; cada item da lista de categorias expõe **Editar** para abrir o mesmo modal em modo edição. O formulário valida título, ícone e cor (obrigatórios) e descrição (opcional) com Zod e envia `createCategory` ou `updateCategory` via Apollo, com feedback por toast e atualização da lista após sucesso. A `CategoryList` exibe o ícone e a cor de cada categoria, com fallback visual para registros legados sem esses campos.
 
 Cada transação e categoria na lista expõe **Excluir**, que abre o `DeleteConfirmDialog` antes de remover o item. As mutations `deleteTransaction` e `deleteCategory` são chamadas via Apollo, com toast de sucesso ou erro e atualização das listas do dashboard após exclusão bem-sucedida.
 
 Mutations em `src/lib/graphql/mutations/Transaction.ts` e `Category.ts`. Tipos de input em `src/types/index.ts`.
 
-Testes em `tests/dashboard-data.test.tsx` cobrem skip sem sessão, carregamento mockado por usuário, refetch e empty states. Testes em `tests/transaction-dialog.test.tsx` e `tests/category-dialog.test.tsx` cobrem modos create/edit, validação e callback após mutation bem-sucedida. Testes em `tests/dashboard-delete.test.tsx` cobrem confirmação, cancelamento, exclusão com refetch e tratamento de erro nos fluxos de delete.
+Testes em `tests/dashboard-data.test.tsx` cobrem skip sem sessão, carregamento mockado por usuário, refetch e empty states. Testes em `tests/transaction-dialog.test.tsx` e `tests/category-dialog.test.tsx` cobrem modos create/edit, validação (incluindo ícone e cor), payload das mutations e callback após sucesso. Testes em `tests/dashboard-delete.test.tsx` cobrem confirmação, cancelamento, exclusão com refetch e tratamento de erro nos fluxos de delete.
 
 ### Páginas dedicadas e perfil
 
@@ -132,7 +132,7 @@ As rotas `/transactions` e `/categories` reutilizam `TransactionList`, `Category
 
 A rota `/profile` exibe nome, e-mail e iniciais da sessão, com campos somente leitura e botão **Sair da conta** que chama a mutation `logout` no servidor, limpa a sessão local e redireciona para o login.
 
-Os modais `TransactionDialog` e `CategoryDialog` compartilham o cabeçalho visual `FormDialogHeader` (título, subtítulo e botão fechar). O modelo de categoria permanece apenas com o campo título.
+Os modais `TransactionDialog` e `CategoryDialog` compartilham o cabeçalho visual `FormDialogHeader` (título, subtítulo e botão fechar).
 
 As listas compactas do dashboard foram ajustadas para mobile, evitando sobreposição de colunas em cards estreitos.
 

@@ -25,6 +25,9 @@ function mockCategoryMutationsFetch() {
           createCategory: {
             id: 'cat-new',
             name: body.variables.data.name,
+            description: body.variables.data.description,
+            icon: body.variables.data.icon,
+            color: body.variables.data.color,
             createdAt: '2026-06-20T00:00:00.000Z',
           },
         },
@@ -37,6 +40,9 @@ function mockCategoryMutationsFetch() {
           updateCategory: {
             id: body.variables.id,
             name: body.variables.data.name,
+            description: body.variables.data.description,
+            icon: body.variables.data.icon,
+            color: body.variables.data.color,
             updatedAt: '2026-06-20T00:00:00.000Z',
           },
         },
@@ -68,6 +74,11 @@ function renderDialog(
   return { onOpenChange, onSuccess }
 }
 
+function fillRequiredCategoryFields() {
+  fireEvent.click(screen.getByRole('button', { name: 'utensils' }))
+  fireEvent.click(screen.getByRole('button', { name: 'green' }))
+}
+
 afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
@@ -79,17 +90,10 @@ describe('CategoryDialog', () => {
 
     expect(screen.getByText('Nova categoria')).toBeTruthy()
     expect(screen.getByLabelText('Título')).toHaveProperty('value', '')
+    expect(screen.getByLabelText('Descrição')).toHaveProperty('value', '')
   })
 
-  it('nao exibe campos extras de descricao, icone ou cor', () => {
-    renderDialog(vi.fn())
-
-    expect(screen.queryByLabelText('Descrição')).toBeNull()
-    expect(screen.queryByText('Ícone')).toBeNull()
-    expect(screen.queryByText('Cor')).toBeNull()
-  })
-
-  it('modo edit preenche o titulo da categoria', () => {
+  it('modo edit preenche os campos da categoria', () => {
     renderDialog(vi.fn(), {
       mode: 'edit',
       category: mockCategoryA,
@@ -97,6 +101,9 @@ describe('CategoryDialog', () => {
 
     expect(screen.getByText('Editar categoria')).toBeTruthy()
     expect(screen.getByLabelText('Título')).toHaveProperty('value', 'Alimentação')
+    expect(screen.getByLabelText('Descrição')).toHaveProperty('value', 'Mercado e refeições')
+    expect(screen.getByRole('button', { name: 'utensils', pressed: true })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'green', pressed: true })).toBeTruthy()
   })
 
   it('exibe erro de validacao ao salvar sem titulo', () => {
@@ -107,11 +114,22 @@ describe('CategoryDialog', () => {
     expect(screen.getByRole('alert').textContent).toBe('Preencha o nome.')
   })
 
+  it('exige icone e cor ao salvar', () => {
+    renderDialog(vi.fn())
+
+    fireEvent.change(screen.getByLabelText('Título'), { target: { value: 'Lazer' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar' }))
+
+    expect(screen.getByRole('alert').textContent).toBe('Selecione um ícone.')
+  })
+
   it('chama onSuccess apos criar categoria com sucesso', async () => {
     const fetchMock = mockCategoryMutationsFetch()
     const { onOpenChange, onSuccess } = renderDialog(fetchMock)
 
     fireEvent.change(screen.getByLabelText('Título'), { target: { value: 'Lazer' } })
+    fireEvent.change(screen.getByLabelText('Descrição'), { target: { value: 'Passeios' } })
+    fillRequiredCategoryFields()
     fireEvent.click(screen.getByRole('button', { name: 'Salvar' }))
 
     await waitFor(() => {
@@ -119,10 +137,14 @@ describe('CategoryDialog', () => {
       expect(onOpenChange).toHaveBeenCalledWith(false)
     })
 
-    expect(fetchMock).toHaveBeenCalled()
     const requestBody = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))
     expect(requestBody.operationName).toBe('CreateCategory')
-    expect(requestBody.variables.data).toEqual({ name: 'Lazer' })
+    expect(requestBody.variables.data).toEqual({
+      name: 'Lazer',
+      description: 'Passeios',
+      icon: 'utensils',
+      color: 'green',
+    })
   })
 
   it('chama onSuccess apos atualizar categoria com sucesso', async () => {
@@ -133,6 +155,8 @@ describe('CategoryDialog', () => {
     })
 
     fireEvent.change(screen.getByLabelText('Título'), { target: { value: 'Mercado' } })
+    fireEvent.click(screen.getByRole('button', { name: 'shopping-cart' }))
+    fireEvent.click(screen.getByRole('button', { name: 'orange' }))
     fireEvent.click(screen.getByRole('button', { name: 'Salvar' }))
 
     await waitFor(() => {
@@ -144,7 +168,12 @@ describe('CategoryDialog', () => {
     expect(requestBody.operationName).toBe('UpdateCategory')
     expect(requestBody.variables).toEqual({
       id: 'cat-a',
-      data: { name: 'Mercado' },
+      data: {
+        name: 'Mercado',
+        description: 'Mercado e refeições',
+        icon: 'shopping-cart',
+        color: 'orange',
+      },
     })
   })
 })

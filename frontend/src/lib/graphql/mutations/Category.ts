@@ -7,6 +7,9 @@ export const CREATE_CATEGORY = gql`
     createCategory(data: $data) {
       id
       name
+      description
+      icon
+      color
       createdAt
     }
   }
@@ -17,6 +20,9 @@ export const UPDATE_CATEGORY = gql`
     updateCategory(id: $id, data: $data) {
       id
       name
+      description
+      icon
+      color
       updatedAt
     }
   }
@@ -29,11 +35,11 @@ export const DELETE_CATEGORY = gql`
 `
 
 export type CreateCategoryMutationData = {
-  createCategory: Pick<Category, 'id' | 'name' | 'createdAt'>
+  createCategory: Pick<Category, 'id' | 'name' | 'description' | 'icon' | 'color' | 'createdAt'>
 }
 
 export type UpdateCategoryMutationData = {
-  updateCategory: Pick<Category, 'id' | 'name' | 'updatedAt'>
+  updateCategory: Pick<Category, 'id' | 'name' | 'description' | 'icon' | 'color' | 'updatedAt'>
 }
 
 export type CreateCategoryMutationVariables = {

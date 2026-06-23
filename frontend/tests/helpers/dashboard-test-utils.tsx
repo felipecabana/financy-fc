@@ -21,6 +21,9 @@ function jsonResponse(body: unknown, status = 200) {
 export const mockCategoryA: Category = {
   id: 'cat-a',
   name: 'Alimentação',
+  description: 'Mercado e refeições',
+  icon: 'utensils',
+  color: 'green',
   userId: 'user-1',
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-01-01T00:00:00.000Z',

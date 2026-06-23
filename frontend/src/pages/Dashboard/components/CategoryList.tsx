@@ -1,4 +1,23 @@
-import { Tag } from 'lucide-react'
+import {
+  BaggageClaim,
+  BookOpen,
+  BriefcaseBusiness,
+  CarFront,
+  Dumbbell,
+  Gift,
+  HeartPulse,
+  House,
+  Mailbox,
+  PawPrint,
+  PiggyBank,
+  ReceiptText,
+  ShoppingCart,
+  Tag,
+  Ticket,
+  ToolCase,
+  Utensils,
+  type LucideIcon,
+} from 'lucide-react'
 
 import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
@@ -6,6 +25,8 @@ import { cn } from '@/lib/utils'
 export type CategoryListRow = {
   id: string
   name: string
+  icon?: string | null
+  color?: string | null
   itemCount: number
   totalAmount: number
 }
@@ -17,14 +38,49 @@ type CategoryListProps = {
   onDelete?: (id: string) => void
 }
 
-const tagVariants = [
+type TagStyle = {
+  bg: string
+  text: string
+  icon: string
+}
+
+const tagVariants: TagStyle[] = [
   { bg: 'bg-blue-light', text: 'text-blue-dark', icon: 'bg-blue-light text-blue-dark' },
   { bg: 'bg-purple-light', text: 'text-purple-dark', icon: 'bg-purple-light text-purple-dark' },
   { bg: 'bg-orange-light', text: 'text-orange-dark', icon: 'bg-orange-light text-orange-dark' },
   { bg: 'bg-pink-light', text: 'text-pink-dark', icon: 'bg-pink-light text-pink-dark' },
   { bg: 'bg-yellow-light', text: 'text-yellow-dark', icon: 'bg-yellow-light text-yellow-dark' },
   { bg: 'bg-green-light', text: 'text-green-dark', icon: 'bg-green-light text-green-dark' },
-] as const
+]
+
+const colorStyles: Record<string, TagStyle> = {
+  green: tagVariants[5]!,
+  blue: tagVariants[0]!,
+  purple: tagVariants[1]!,
+  orange: tagVariants[2]!,
+  pink: tagVariants[3]!,
+  yellow: tagVariants[4]!,
+  red: { bg: 'bg-red-light', text: 'text-red-dark', icon: 'bg-red-light text-red-dark' },
+}
+
+const iconComponents: Record<string, LucideIcon> = {
+  'briefcase-business': BriefcaseBusiness,
+  'car-front': CarFront,
+  'heart-pulse': HeartPulse,
+  'piggy-bank': PiggyBank,
+  'shopping-cart': ShoppingCart,
+  ticket: Ticket,
+  'tool-case': ToolCase,
+  utensils: Utensils,
+  'paw-print': PawPrint,
+  house: House,
+  gift: Gift,
+  dumbbell: Dumbbell,
+  'book-open': BookOpen,
+  'baggage-claim': BaggageClaim,
+  mailbox: Mailbox,
+  'receipt-text': ReceiptText,
+}
 
 const currencyFormatter = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
@@ -33,6 +89,23 @@ const currencyFormatter = new Intl.NumberFormat('pt-BR', {
 
 function formatItemCount(count: number) {
   return count === 1 ? '1 item' : `${count} itens`
+}
+
+function getTagStyle(row: CategoryListRow, index: number): TagStyle {
+  const fromColor = row.color ? colorStyles[row.color] : undefined
+  if (fromColor) return fromColor
+
+  return tagVariants[index % tagVariants.length]!
+}
+
+function CategoryRowIcon({ icon, className }: { icon?: string | null; className?: string }) {
+  const Icon = icon ? iconComponents[icon] : undefined
+
+  if (Icon) {
+    return <Icon className={className} />
+  }
+
+  return <Tag className={className} />
 }
 
 function EmptyState() {
@@ -51,18 +124,19 @@ type DashboardRowProps = {
 }
 
 function DashboardRow({ row, index, onEdit, onDelete }: DashboardRowProps) {
-  const tag = tagVariants[index % tagVariants.length]!
+  const tag = getTagStyle(row, index)
 
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between gap-3">
         <span
           className={cn(
-            'min-w-0 truncate rounded-full px-3 py-0.5 text-sm font-medium',
+            'inline-flex min-w-0 items-center gap-1.5 truncate rounded-full px-3 py-0.5 text-sm font-medium',
             tag.bg,
             tag.text,
           )}
         >
+          <CategoryRowIcon icon={row.icon} className="size-3.5 shrink-0" />
           {row.name}
         </span>
         <span className="shrink-0 text-sm font-semibold text-gray-800 tabular-nums">
@@ -105,7 +179,7 @@ type PageCardProps = {
 }
 
 function PageCard({ row, index, onEdit, onDelete }: PageCardProps) {
-  const tag = tagVariants[index % tagVariants.length]!
+  const tag = getTagStyle(row, index)
 
   return (
     <Card className="gap-5 rounded-xl p-6 shadow-none">
@@ -116,7 +190,7 @@ function PageCard({ row, index, onEdit, onDelete }: PageCardProps) {
             tag.icon,
           )}
         >
-          <Tag className="size-4" />
+          <CategoryRowIcon icon={row.icon} className="size-4" />
         </div>
         <div className="flex shrink-0 gap-2">
           {onDelete && (
@@ -145,11 +219,12 @@ function PageCard({ row, index, onEdit, onDelete }: PageCardProps) {
       <div className="flex items-center justify-between gap-3">
         <span
           className={cn(
-            'rounded-full px-3 py-1 text-sm font-medium',
+            'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium',
             tag.bg,
             tag.text,
           )}
         >
+          <CategoryRowIcon icon={row.icon} className="size-3.5 shrink-0" />
           {row.name}
         </span>
         <div className="text-right">

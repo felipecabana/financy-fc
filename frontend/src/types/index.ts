@@ -24,6 +24,9 @@ export interface AuthPayload {
 export interface Category {
   id: string
   name: string
+  description?: string | null
+  icon?: string | null
+  color?: string | null
   userId: string
   createdAt: string
   updatedAt: string
@@ -31,10 +34,16 @@ export interface Category {
 
 export interface CreateCategoryInput {
   name: string
+  icon: string
+  color: string
+  description?: string | null
 }
 
 export interface UpdateCategoryInput {
-  name?: string
+  name: string
+  icon: string
+  color: string
+  description?: string | null
 }
 
 export interface CreateTransactionInput {

@@ -3,10 +3,16 @@ import categoryService from '../../../services/category.service.js'
 
 export interface CreateCategoryInput {
   name: string
+  icon: string
+  color: string
+  description?: string | null
 }
 
 export interface UpdateCategoryInput {
-  name?: string
+  name: string
+  icon: string
+  color: string
+  description?: string | null
 }
 
 type CategoryParent = {

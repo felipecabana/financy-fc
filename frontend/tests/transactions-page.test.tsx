@@ -91,9 +91,39 @@ describe('Transactions page', () => {
       expect(screen.getByText('Mercado User 1')).toBeTruthy()
     })
 
+    expect(screen.getByLabelText('Buscar')).toBeTruthy()
+    expect(screen.getByLabelText('Tipo')).toBeTruthy()
+    expect(screen.getByLabelText('Categoria')).toBeTruthy()
+    expect(screen.getByLabelText('Período')).toBeTruthy()
+
     fireEvent.click(screen.getByRole('button', { name: 'Nova transação' }))
 
     expect(screen.getByText('Nova transação', { selector: 'h2' })).toBeTruthy()
+  })
+
+  it('filtra transacoes pela busca', async () => {
+    const { fetchMock } = createTransactionsPageFetch([
+      mockTransactionUser1,
+      {
+        ...mockTransactionUser1,
+        id: 'tx-2',
+        title: 'Uber User 1',
+        date: '2026-06-16T00:00:00.000Z',
+      },
+    ])
+    authenticate()
+    renderTransactions(fetchMock)
+
+    await waitFor(() => {
+      expect(screen.getByText('Mercado User 1')).toBeTruthy()
+    })
+
+    fireEvent.change(screen.getByLabelText('Buscar'), { target: { value: 'Uber' } })
+
+    await waitFor(() => {
+      expect(screen.queryByText('Mercado User 1')).toBeNull()
+      expect(screen.getByText('Uber User 1')).toBeTruthy()
+    })
   })
 
   it('abre dialog de edicao ao clicar Editar', async () => {

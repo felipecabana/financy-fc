@@ -146,6 +146,7 @@ describe('auth navigation', () => {
     renderApp('/')
     await waitForSessionBootstrap()
 
+    expect(screen.queryByRole('banner')).toBeNull()
     expect(screen.queryByRole('navigation', { name: 'Principal' })).toBeNull()
     expect(screen.queryByRole('link', { name: 'Transações' })).toBeNull()
   })
@@ -154,6 +155,7 @@ describe('auth navigation', () => {
     renderApp('/signup')
     await waitForSessionBootstrap()
 
+    expect(screen.queryByRole('banner')).toBeNull()
     expect(screen.queryByRole('navigation', { name: 'Principal' })).toBeNull()
     expect(screen.queryByRole('link', { name: 'Categorias' })).toBeNull()
   })

@@ -21,9 +21,9 @@ function jsonResponse(body: unknown, status = 200) {
 export const mockCategoryA: Category = {
   id: 'cat-a',
   name: 'Alimentação',
-  description: 'Mercado e refeições',
+  description: 'Restaurantes, delivery e refeições',
   icon: 'utensils',
-  color: 'green',
+  color: 'blue',
   userId: 'user-1',
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-01-01T00:00:00.000Z',
@@ -45,7 +45,7 @@ export const mockTransactionUser1: Transaction = {
   date: '2026-06-15T00:00:00.000Z',
   userId: 'user-1',
   categoryId: 'cat-a',
-  category: { id: 'cat-a', name: 'Alimentação', userId: 'user-1', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' },
+  category: { id: 'cat-a', name: 'Alimentação', icon: 'utensils', color: 'blue', userId: 'user-1', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' },
   createdAt: '2026-06-15T00:00:00.000Z',
   updatedAt: '2026-06-15T00:00:00.000Z',
 }

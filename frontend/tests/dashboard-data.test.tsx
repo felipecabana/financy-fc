@@ -114,6 +114,24 @@ describe('Dashboard data view', () => {
     expect(screen.queryByText('Mercado User 1')).toBeNull()
   })
 
+  it('exibe valores nos cards de resumo', async () => {
+    const fetchMock = mockDashboardFetch([mockCategoryA], [mockTransactionUser1])
+
+    useAuthStore.setState({
+      user: mockUser,
+      isAuthenticated: true,
+    })
+
+    renderDashboard(fetchMock)
+
+    await waitFor(() => {
+      expect(screen.getByText('-R$ 120,50')).toBeTruthy()
+    })
+
+    expect(screen.getByText('R$ 0,00')).toBeTruthy()
+    expect(screen.getAllByText('R$ 120,50')).toHaveLength(2)
+  })
+
   it('exibe empty states quando nao ha categorias nem transacoes', async () => {
     const fetchMock = mockDashboardFetch([], [])
 

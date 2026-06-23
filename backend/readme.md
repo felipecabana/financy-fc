@@ -144,7 +144,7 @@ Credenciais do seed:
 - **Email:** `usuario@financy.com`
 - **Senha:** `senha123456`
 
-Você pode rodar `npm run db:seed` várias vezes; os dados de exemplo não serão duplicados. O reset apaga todos os dados locais antes de reconstruir o schema — use apenas em desenvolvimento.
+Você pode rodar `npm run db:seed` várias vezes; os dados de exemplo não serão duplicados e transações de seed existentes têm a categoria corrigida quando necessário. O reset apaga todos os dados locais antes de reconstruir o schema — use apenas em desenvolvimento.
 
 ### Helpers e serviço de autenticação
 
@@ -154,7 +154,7 @@ Utilitários em `src/helpers/` usados pelo `auth.service.ts`:
 - **`jwt.ts`** — `createToken` e `verifyToken` com payload `{ id }`, expiração de 1 dia e secret do `JWT_SECRET`
 - **`auth-cookie.ts`** — `setAuthCookie` e `clearAuthCookie` com opções `httpOnly`, `secure` (produção), `sameSite: 'lax'`, `path: '/'` e `maxAge` alinhado ao JWT
 
-O `auth.service.ts` valida campos (incluindo nome no cadastro), garante email único, persiste senha hasheada e retorna o usuário público com JWT para uso interno. Os resolvers de `signup`/`login` gravam o JWT no cookie e expõem só `user` no GraphQL. Mensagens de erro em português (`Nome, email e senha são obrigatórios.`, `Email já cadastrado.`, `Credenciais inválidas.`).
+O `auth.service.ts` valida campos (incluindo nome no cadastro), garante email único, persiste senha hasheada e retorna o usuário público com JWT para uso interno. No signup, o usuário recebe automaticamente as categorias padrão do app (Alimentação, Entretenimento, Investimento, Mercado, Salário, Saúde, Transporte e Utilidades), cada uma com descrição, ícone e cor. Os resolvers de `signup`/`login` gravam o JWT no cookie e expõem só `user` no GraphQL. Mensagens de erro em português (`Nome, email e senha são obrigatórios.`, `Email já cadastrado.`, `Credenciais inválidas.`).
 
 Testes em `tests/` cobrem helpers, service, resolvers, schema GraphQL, mutations in-process e smoke HTTP.
 

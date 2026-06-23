@@ -14,6 +14,7 @@ import {
 } from '@/lib/graphql/mutations'
 import type { Category, Transaction } from '@/types'
 
+import { computeTransactionSummary } from './computeTransactionSummary'
 import { CategoriesSection } from './components/CategoriesSection'
 import { CategoryDialog } from './components/CategoryDialog'
 import { CategoryList, type CategoryListRow } from './components/CategoryList'
@@ -44,6 +45,7 @@ function buildCategoryRows(categories: Category[], transactions: Transaction[]):
     return {
       id: category.id,
       name: category.name,
+      description: category.description,
       icon: category.icon,
       color: category.color,
       itemCount: linked.length,
@@ -100,6 +102,8 @@ export function Dashboard() {
     () => buildCategoryRows(categories, transactions),
     [categories, transactions],
   )
+
+  const summary = useMemo(() => computeTransactionSummary(transactions), [transactions])
 
   function openCreateCategory() {
     setCategoryDialogMode('create')
@@ -166,7 +170,7 @@ export function Dashboard() {
         )}
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <SummaryCards loading={loading} />
+          <SummaryCards loading={loading} summary={summary} />
           <TransactionsSection
             loading={loading}
             onNewTransaction={() => setCreateDialogOpen(true)}

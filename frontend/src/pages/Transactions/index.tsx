@@ -1,7 +1,7 @@
 import { useMutation } from '@apollo/client/react'
 import { LinkError } from '@apollo/client/errors'
 import { Plus } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import { Page } from '@/components/Page'
@@ -18,6 +18,14 @@ import { TransactionList } from '@/pages/Dashboard/components/TransactionList'
 import { useDashboardData } from '@/pages/Dashboard/useDashboardData'
 import type { Transaction } from '@/types'
 
+import { TransactionFiltersSection } from './components/TransactionFilters'
+import { PAGE_SIZE, TransactionPagination } from './components/TransactionPagination'
+import {
+  createDefaultTransactionFilters,
+  filterTransactions,
+  type TransactionFilters,
+} from './filterTransactions'
+
 function getDeleteTransactionErrorMessage(error: unknown) {
   return LinkError.is(error)
     ? 'Falha de conexão. Tente novamente.'
@@ -30,8 +38,31 @@ export function Transactions() {
   const [editingTransaction, setEditingTransaction] = useState<Transaction | undefined>()
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deletingTransaction, setDeletingTransaction] = useState<Transaction | undefined>()
+  const [filters, setFilters] = useState<TransactionFilters>(createDefaultTransactionFilters)
+  const [page, setPage] = useState(1)
 
   const { categories, transactions, loading, error, refetchTransactions } = useDashboardData()
+
+  const filteredTransactions = useMemo(
+    () => filterTransactions(transactions, filters),
+    [transactions, filters],
+  )
+
+  const paginatedTransactions = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE
+    return filteredTransactions.slice(start, start + PAGE_SIZE)
+  }, [filteredTransactions, page])
+
+  useEffect(() => {
+    setPage(1)
+  }, [filters])
+
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / PAGE_SIZE))
+    if (page > totalPages) {
+      setPage(totalPages)
+    }
+  }, [filteredTransactions.length, page])
 
   const [deleteTransaction, { loading: deletingLoading }] = useMutation<
     DeleteTransactionMutationData,
@@ -82,6 +113,11 @@ export function Transactions() {
     void deleteTransaction({ variables: { id: deletingTransaction.id } })
   }
 
+  const emptyMessage =
+    transactions.length === 0
+      ? 'Nenhuma transação cadastrada.'
+      : 'Nenhuma transação encontrada.'
+
   return (
     <>
       <Page>
@@ -104,16 +140,33 @@ export function Transactions() {
           </Button>
         </div>
 
+        <TransactionFiltersSection
+          filters={filters}
+          categories={categories}
+          transactions={transactions}
+          onChange={setFilters}
+        />
+
         <Card className="gap-0 overflow-hidden rounded-xl p-0 shadow-none">
           {loading ? (
             <p className="px-6 py-8 text-center text-sm text-gray-500">Carregando transações...</p>
           ) : (
-            <TransactionList
-              variant="page"
-              transactions={transactions}
-              onEdit={openEdit}
-              onDelete={openDelete}
-            />
+            <>
+              <TransactionList
+                variant="page"
+                transactions={paginatedTransactions}
+                emptyMessage={emptyMessage}
+                onEdit={openEdit}
+                onDelete={openDelete}
+              />
+              {filteredTransactions.length > 0 && (
+                <TransactionPagination
+                  page={page}
+                  totalItems={filteredTransactions.length}
+                  onPageChange={setPage}
+                />
+              )}
+            </>
           )}
         </Card>
       </Page>

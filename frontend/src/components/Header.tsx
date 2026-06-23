@@ -33,13 +33,7 @@ export function Header() {
   const user = useAuthStore((state) => state.user)
 
   if (!isAuthenticated) {
-    return (
-      <header className="border-b border-gray-200 bg-white">
-        <div className={cn('mx-auto flex h-[69px] max-w-7xl items-center', headerPadding)}>
-          <Logo />
-        </div>
-      </header>
-    )
+    return null
   }
 
   const initials = user ? getUserInitials(user) : '?'

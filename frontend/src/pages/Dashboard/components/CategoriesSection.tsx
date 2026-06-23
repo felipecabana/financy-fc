@@ -1,6 +1,7 @@
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, Plus } from 'lucide-react'
 import type { ReactNode } from 'react'
 
+import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 
@@ -8,6 +9,7 @@ type CategoriesSectionProps = {
   children?: ReactNode
   className?: string
   loading: boolean
+  onNewCategory?: () => void
 }
 
 function SectionSkeleton() {
@@ -26,7 +28,12 @@ function SectionSkeleton() {
   )
 }
 
-export function CategoriesSection({ children, className, loading }: CategoriesSectionProps) {
+export function CategoriesSection({
+  children,
+  className,
+  loading,
+  onNewCategory,
+}: CategoriesSectionProps) {
   return (
     <Card className={cn('col-span-1 gap-0 overflow-hidden rounded-xl p-0 shadow-none', className)}>
       <div className="flex items-center justify-between border-b border-gray-200 px-6 py-5">
@@ -39,6 +46,18 @@ export function CategoriesSection({ children, className, loading }: CategoriesSe
 
       <div className="min-h-[200px]">
         {loading ? <SectionSkeleton /> : children}
+      </div>
+
+      <div className="flex justify-center border-t border-gray-200 py-5">
+        <Button
+          type="button"
+          variant="link"
+          className="h-auto gap-1 px-0 text-sm font-medium"
+          onClick={onNewCategory}
+        >
+          <Plus className="size-5" />
+          Nova categoria
+        </Button>
       </div>
     </Card>
   )

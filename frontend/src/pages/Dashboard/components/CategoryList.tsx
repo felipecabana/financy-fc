@@ -9,6 +9,7 @@ export type CategoryListRow = {
 
 type CategoryListProps = {
   rows: CategoryListRow[]
+  onEdit?: (id: string) => void
 }
 
 const tagVariants = [
@@ -29,7 +30,7 @@ function formatItemCount(count: number) {
   return count === 1 ? '1 item' : `${count} itens`
 }
 
-export function CategoryList({ rows }: CategoryListProps) {
+export function CategoryList({ rows, onEdit }: CategoryListProps) {
   if (rows.length === 0) {
     return (
       <p className="px-6 py-8 text-center text-sm text-gray-500">
@@ -57,6 +58,15 @@ export function CategoryList({ rows }: CategoryListProps) {
             <span className="min-w-0 flex-1 text-right text-sm text-gray-600">
               {formatItemCount(row.itemCount)}
             </span>
+            {onEdit && (
+              <button
+                type="button"
+                onClick={() => onEdit(row.id)}
+                className="shrink-0 text-sm font-medium text-brand-base"
+              >
+                Editar
+              </button>
+            )}
             <span className="w-[88px] shrink-0 text-right text-sm font-semibold text-gray-800">
               {currencyFormatter.format(row.totalAmount)}
             </span>
